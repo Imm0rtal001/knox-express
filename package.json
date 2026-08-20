@@ -1,0 +1,22 @@
+{
+  "name": "knox-express-addon",
+  "version": "4.0.22",
+  "private": true,
+  "description": "Express/Nuvio-compatible addon wrapper for the supplied Knox providers.",
+  "main": "server.js",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "express": "^5.2.1",
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "latest"
+  }
+}

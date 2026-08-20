@@ -1,0 +1,253 @@
+{
+  "4khdhub": {
+    "id": "4khdhub",
+    "name": "4KHDHub",
+    "description": "4KHDHub direct links",
+    "version": "1.0.0",
+    "author": "Nuvio Team",
+    "filename": "4khdhub.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/DZpW6Xfb/4khdhub.png",
+    "contentLanguage": [
+      "en"
+    ]
+  },
+  "movieBlast": {
+    "id": "movieBlast",
+    "name": "MovieBlast",
+    "description": "Provider: MovieBlast | English, Hindi",
+    "version": "1.1.0",
+    "author": "Eclipsia",
+    "filename": "MovieBlast.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "",
+    "contentLanguage": [
+      "en",
+      "hi"
+    ]
+  },
+  "CineFreak": {
+    "id": "CineFreak",
+    "name": "CineFreak",
+    "description": "Provider: CineFreak | Bangla, English, Hindi",
+    "version": "3.3.0",
+    "author": "Eclipsia",
+    "filename": "CineFreak.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "",
+    "contentLanguage": [
+      "bn",
+      "hi",
+      "en"
+    ]
+  },
+  "moviesHunt": {
+    "id": "moviesHunt",
+    "name": "MoviesHunt",
+    "description": "Provider: MoviesHunt | Multi-Lang",
+    "version": "1.5.0",
+    "author": "Eclipsia",
+    "filename": "MoviesHunt.js",
+    "supportedTypes": [
+      "movie"
+    ],
+    "enabled": true,
+    "logo": "",
+    "contentLanguage": [
+      "en"
+    ]
+  },
+  "animesalt": {
+    "id": "animesalt",
+    "name": "AnimeSalt",
+    "description": "AnimeSalt India",
+    "version": "1.0.0",
+    "author": "Kabir",
+    "filename": "animesalt.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/1X24MYhg/animesalt.png",
+    "contentLanguage": [
+      "hi",
+      "en",
+      "ja"
+    ]
+  },
+  "animeworld": {
+    "id": "animeworld",
+    "name": "AnimeWorld",
+    "description": "Watch AnimeWorld India",
+    "version": "1.0.0",
+    "author": "Kabir",
+    "filename": "animeworld.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/wxD6rVKX/animeworld.png",
+    "contentLanguage": [
+      "hi",
+      "en",
+      "ja"
+    ]
+  },
+  "hdhub4u": {
+    "id": "hdhub4u",
+    "name": "HDHub4u",
+    "description": "Direct links from HDHub4u with high-speed download support",
+    "version": "1.0.0",
+    "author": "Nuvio Team",
+    "filename": "hdhub4u.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/mryRTf0R/hdhub4u.png",
+    "contentLanguage": [
+      "en"
+    ]
+  },
+  "hdGharTV": {
+    "id": "hdGharTV",
+    "name": "HdGharTV",
+    "description": "Provider: HdGharTV | Multi-lang",
+    "version": "1.1.0",
+    "author": "Eclipsia",
+    "filename": "HdGharTV.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "",
+    "contentLanguage": [
+      "en",
+      "hi"
+    ]
+  },
+  "moviesdrive": {
+    "id": "moviesdrive",
+    "name": "MoviesDrive",
+    "description": "MoviesDrive - Movies and TV shows with multiple streaming servers",
+    "version": "2.0.0",
+    "author": "JK",
+    "filename": "moviesdrive.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/bwDbhq9q/moviesdrive.png",
+    "contentLanguage": [
+      "en",
+      "hi"
+    ]
+  },
+  "uhdmovies": {
+    "id": "uhdmovies",
+    "name": "UHDMovies",
+    "description": "UHD Movies streaming with multiple resolution",
+    "version": "1.0.0",
+    "author": "Nuvio Team",
+    "filename": "uhdmovies.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/KzDBBdbK/uhdmovies.png",
+    "contentLanguage": [
+      "en"
+    ]
+  },
+  "vegaMovies": {
+    "id": "vegaMovies",
+    "name": "VegaMovies",
+    "description": "VegaMovies streaming with high-quality direct links",
+    "version": "2.0",
+    "author": "piratezoro9",
+    "filename": "vegamovies.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/TwYK26jn/vegamovies.png",
+    "contentLanguage": [
+      "en",
+      "hi"
+    ]
+  },
+  "rogmovies": {
+    "id": "rogmovies",
+    "name": "Rogmovies",
+    "description": "rogmovies streaming bollywood movies with high-quality direct links",
+    "version": "2.0",
+    "author": "piratezoro9",
+    "filename": "rogmovies.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "",
+    "contentLanguage": [
+      "en",
+      "hi"
+    ]
+  },
+  "zinkmovies": {
+    "id": "zinkmovies",
+    "name": "ZinkMovies",
+    "description": "Bollywood Movies, Hollywood Movies, South Indian Movies, Hindi Dubbed Movies, Web Series, OTT Releases, & Trending Cinema",
+    "version": "1.0.0",
+    "author": "Kabir",
+    "filename": "zinkmovies.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/XqCZyCgp/zinkmovies.png",
+    "contentLanguage": [
+      "en",
+      "hi",
+      "ta",
+      "te"
+    ]
+  },
+  "dahmermovies": {
+    "id": "dahmermovies",
+    "name": "Dahmermovies",
+    "description": "Only works on Android TV",
+    "version": "1.0.1",
+    "author": "Nuvio Team",
+    "filename": "dahmermovies.js",
+    "supportedTypes": [
+      "movie",
+      "tv"
+    ],
+    "enabled": true,
+    "logo": "https://i.postimg.cc/hGt3dV6Z/dhamermovies.png",
+    "contentLanguage": [
+      "en"
+    ]
+  }
+}

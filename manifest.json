@@ -1,0 +1,23 @@
+{
+  "id": "com.knox.express",
+  "version": "4.0.22",
+  "name": "Knox Express",
+  "description": "Express-based multi-provider stream addon with a TV-friendly provider manager.",
+  "logo": "/logo.svg",
+  "resources": [
+    "stream"
+  ],
+  "types": [
+    "movie",
+    "series"
+  ],
+  "idPrefixes": [
+    "tt",
+    "tmdb"
+  ],
+  "behaviorHints": {
+    "configurable": true,
+    "configurationRequired": false
+  },
+  "icon": "/logo.svg"
+}

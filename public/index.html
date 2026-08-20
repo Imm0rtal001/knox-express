@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Knox Express</title>
+<style>
+:root{--bg:#071018;--panel:#101b25;--panel2:#152432;--text:#f5f7fa;--muted:#9aa9b8;--accent:#64d8cb;--danger:#ff6b6b;--line:#263746}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#132635 0,#071018 45%);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#64d8cb,#5e8cff);display:grid;place-items:center;font-weight:900;color:#061016}.brand h1{margin:0;font-size:24px}.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}.btn.primary{background:var(--accent);color:#041014;border-color:transparent;font-weight:800}.btn:focus,.toggle:focus{outline:3px solid #fff;outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.stat{background:rgba(16,27,37,.9);border:1px solid var(--line);border-radius:14px;padding:14px}.stat b{display:block;font-size:24px}.stat span{color:var(--muted);font-size:12px}
+.toolbar{display:flex;gap:10px;margin-bottom:12px}.timeout-control{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 10px;color:var(--muted);font-size:13px}.timeout-control input{background:transparent;border:0;color:var(--text);padding:10px 4px;font-size:14px;min-width:170px}.timeout-control select{background:transparent;border:0;color:var(--text);padding:10px 4px;font-size:14px;cursor:pointer}.search{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px;font-size:16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:rgba(16,27,37,.94);border:1px solid var(--line);border-radius:15px;padding:15px;display:flex;gap:13px;min-height:135px}.card.off{opacity:.6}.icon{width:52px;height:52px;border-radius:12px;background:var(--panel2);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}.icon img{width:100%;height:100%;object-fit:cover}.initial{font-weight:900;font-size:20px}.info{min-width:0;flex:1}.name{font-family:"Times New Roman",Times,serif;font-weight:700;font-size:18px;letter-spacing:.1px}.desc{color:var(--muted);font-size:13px;margin:4px 0 10px}.meta{display:flex;gap:6px;flex-wrap:wrap}.pill{font-size:11px;padding:4px 7px;border-radius:999px;background:var(--panel2);color:#c9d4df}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.toggle{width:50px;height:28px;border:0;border-radius:20px;background:#394958;position:relative;cursor:pointer}.toggle i{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.18s}.toggle.on{background:var(--accent)}.toggle.on i{left:26px}.section{margin-top:22px}.section h2{font-size:16px;margin:0 0 9px}.log{background:#050b10;border:1px solid var(--line);border-radius:12px;padding:10px;max-height:220px;overflow:auto;font:12px ui-monospace,SFMono-Regular,monospace}.log div{padding:3px 0;border-bottom:1px solid #13202b}.muted{color:var(--muted)}.error{color:var(--danger);padding:10px 0}.busy{opacity:.65;pointer-events:none}.install{margin-top:20px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}code{background:#071018;padding:3px 6px;border-radius:6px;word-break:break-all}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start;flex-direction:column}.actions{width:100%}.btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo">KX</div><div><h1>Knox Express</h1><p>TV-friendly Nuvio addon control center</p></div></div>
+    <div class="actions">
+      <button id="enableAll" class="btn">Enable all</button>
+      <button id="disableAll" class="btn">Disable all</button>
+      <button id="refreshBtn" class="btn primary">Refresh</button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><b id="total">—</b><span>Total providers</span></div>
+    <div class="stat"><b id="enabled">—</b><span>Enabled</span></div>
+    <div class="stat"><b id="disabled">—</b><span>Disabled</span></div>
+    <div class="stat"><b id="uptime">—</b><span>Server uptime</span></div>
+  </section>
+
+  <div class="toolbar"><input id="search" class="search" placeholder="Search providers…"><label class="timeout-control"><span class="pill">Provider timeout: Unlimited</span></label><label class="timeout-control">DNS <select id="dnsSelect"><option value="system">System</option><option value="cloudflare">Cloudflare</option><option value="google">Google</option><option value="quad9">Quad9</option><option value="adguard">AdGuard</option><option value="custom">Custom</option></select></label></div>
+<div id="customDns" class="toolbar" hidden><label class="timeout-control" style="flex:1">Custom DNS <input id="dnsInput" placeholder="1.1.1.1, 1.0.0.1"></label><button id="saveDns" class="btn primary">Save DNS</button></div>
+  <main id="grid" class="grid"></main>
+
+  <section class="install">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <img src="/logo.svg" alt="Knox Express" style="width:42px;height:42px;border-radius:10px">
+      <strong>Install Knox Express in Nuvio</strong>
+    </div>
+    <p class="muted">Expose this server over your LAN/public HTTPS host, then use:</p>
+    <code id="manifestUrl">http://YOUR-HOST:7000/manifest.json</code><div class="muted" style="margin-top:8px">Provider configuration is applied automatically when settings are saved.</div>
+  </section>
+
+  <section class="section">
+    <h2>Live server log</h2>
+    <div id="log" class="log"><div class="muted">Loading…</div></div>
+  </section>
+</div>
+<script>
+let providers=[];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+async function api(url,opt){
+ const r=await fetch(url,{headers:{"Content-Type":"application/json",...(opt&&opt.headers||{})},...opt});
+ if(!r.ok){
+   let message=`Request failed (${r.status})`;
+   try{const body=await r.json();message=body.error||message}catch{}
+   throw new Error(message);
+ }
+ return r.json();
+}
+async function refresh(){
+ try{providers=await api("/api/providers");render();await stats();await logs();clearError()}
+ catch(e){showError(e.message)}
+}
+function render(){
+ const q=document.getElementById("search").value.toLowerCase();
+ const list=providers.filter(p=>(p.name+" "+p.description).toLowerCase().includes(q));
+ document.getElementById("grid").innerHTML=list.map(p=>{
+   const letter=esc(p.name.slice(0,1).toUpperCase());
+   const icon=p.logo?`<img src="${esc(p.logo)}" alt="">`:`<span class="initial">${letter}</span>`;
+   return `<article class="card ${p.enabled?"":"off"}">
+     <div class="icon">${icon}</div><div class="info">
+       <div class="row"><div class="name">${esc(p.name)}</div>
+       <button class="toggle ${p.enabled?"on":""}" aria-label="Toggle ${esc(p.name)}" aria-pressed="${p.enabled}" data-provider-id="${esc(p.id)}"><i></i></button></div>
+       <div class="desc">${esc(p.description||"No description")}</div>
+       <div class="meta"><span class="pill">${esc(p.version||"unknown")}</span><span class="pill">${esc((p.supportedTypes||[]).join(" / "))}</span><span class="pill">${p.enabled?"Enabled":"Disabled"}</span></div>
+     </div>
+   </article>`;
+ }).join("")||`<div class="muted">No providers match your search.</div>`;
+ document.querySelectorAll("[data-provider-id]").forEach(btn=>{
+   btn.addEventListener("click",()=>toggle(btn.dataset.providerId, btn.getAttribute("aria-pressed")!=="true"));
+ });
+}
+async function toggle(id,enabled){
+ try{document.body.classList.add("busy");await api("/api/providers/"+encodeURIComponent(id)+"/toggle",{method:"POST",body:JSON.stringify({enabled})});await refresh()}
+ catch(e){showError(e.message)}finally{document.body.classList.remove("busy")}
+}
+async function setAll(enabled){
+ try{document.body.classList.add("busy");await api("/api/providers/toggle-all",{method:"POST",body:JSON.stringify({enabled})});await refresh()}
+ catch(e){showError(e.message)}finally{document.body.classList.remove("busy")}
+}
+function showError(message){
+ let el=document.getElementById("error");
+ if(!el){el=document.createElement("div");el.id="error";el.className="error";document.querySelector(".toolbar").after(el)}
+ el.textContent=message;
+}
+function clearError(){document.getElementById("error")?.remove()}
+async function stats(){const s=await api("/api/health");document.getElementById("total").textContent=s.providers;document.getElementById("enabled").textContent=s.enabled;document.getElementById("disabled").textContent=s.providers-s.enabled;document.getElementById("uptime").textContent=Math.floor(s.uptime/60)+"m"}
+async function logs(){const l=await api("/api/logs");document.getElementById("log").innerHTML=l.map(x=>`<div><span class="muted">${esc(x.time)}</span> [${esc(x.level)}] ${esc(x.message)} ${x.provider?esc("("+x.provider+")"):""}</div>`).join("")||"<div class='muted'>No log entries.</div>"}
+async function loadSettings(){
+ try{
+   const s=await api("/api/settings");
+   
+   const dns=await api("/api/dns");
+   const current=(s.dnsServers||[]).join(", ");
+   const preset=Object.entries(dns.presets||{}).find(([key,servers])=>servers.join(",")===(s.dnsServers||[]).join(","));
+   document.getElementById("dnsSelect").value=preset ? preset[0] : (current ? "custom" : "system");
+   document.getElementById("dnsInput").value=current;
+   document.getElementById("customDns").hidden=document.getElementById("dnsSelect").value!=="custom";
+ }catch(e){showError(e.message)}
+}
+async function saveDns(){
+ try{
+   document.body.classList.add("busy");
+   const preset=document.getElementById("dnsSelect").value;
+   const body=preset==="custom" ? {preset,dnsServers:document.getElementById("dnsInput").value} : {preset};
+   await api("/api/settings/dns",{method:"POST",body:JSON.stringify(body)});
+   clearError();
+ }catch(e){showError(e.message);await loadSettings()}finally{document.body.classList.remove("busy")}
+}
+async function saveTimeout(timeoutMs){
+ try{
+   document.body.classList.add("busy");
+   await api("/api/settings/timeout",{method:"POST",body:JSON.stringify({timeoutMs:Number(timeoutMs)})});
+   clearError();
+ }catch(e){showError(e.message);await loadSettings()}finally{document.body.classList.remove("busy")}
+}
+document.getElementById("manifestUrl").textContent=location.origin+"/manifest.json";
+document.getElementById("enableAll").addEventListener("click",()=>setAll(true));
+document.getElementById("disableAll").addEventListener("click",()=>setAll(false));
+document.getElementById("refreshBtn").addEventListener("click",refresh);
+document.getElementById("search").addEventListener("input",render);
+
+document.getElementById("dnsSelect").addEventListener("change",e=>{
+ document.getElementById("customDns").hidden=e.target.value!=="custom";
+ if(e.target.value!=="custom") saveDns();
+});
+document.getElementById("saveDns").addEventListener("click",saveDns);
+loadSettings();
+refresh();
+// Nuvio commonly opens /configure immediately after installation. Automatically
+// perform one scraper refresh for that first configure visit, then let the user
+// use the button whenever they need another refresh.
+(async()=>{
+  const key="knox-scraper-refreshed-v4.0.16";
+  if(sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key,"1");
+  try { await api("/api/scrapers/refresh",{method:"POST",body:"{}"}); await refresh(); }
+  catch(e){ console.warn("Initial scraper refresh failed",e); sessionStorage.removeItem(key); }
+})();
+setInterval(()=>{stats().catch(e=>showError(e.message));logs().catch(e=>showError(e.message))},5000);
+</script>
+</body>
+</html>
