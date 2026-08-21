@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const cheerio = require('cheerio-without-node-native');
+const cheerio = require('cheerio');
 const PROVIDER = "Rogmovies";
 const TMDB_KEY = "307b7b8ef035c6aa336900aef4e203bd";
 const BASE_URL = "https://new2.rogmovies.click";
@@ -43,12 +43,9 @@ const normalizeQ = q => { if (!q)
 const parseQ = t => { const m = String(t || '').match(/(2160|1080|720|480|1440)\s*P/i); return m ? m[1].toLowerCase() + 'p' : /4K|UHD/i.test(t) ? '2160p' : /1440|2K/i.test(t) ? '1440p' : 'HD'; };
 const decodeEnt = s => (s || '').replace(/&#8211;|&#8212;|&ndash;|&mdash;/g, '-').replace(/&#038;|&amp;/g, '&').replace(/&#8217;/g, "'").replace(/&quot;/g, '"');
 function fetchSafe(url_1) {
-    return __awaiter(this, arguments, void 0, function* (url, opts = {}, timeout = 12000) {
+    return __awaiter(this, arguments, void 0, function* (url, opts = {}) {
         try {
-            return yield Promise.race([
-                fetch(url, Object.assign(Object.assign({}, opts), { headers: Object.assign({ "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "identity" }, (opts.headers || {})) })),
-                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeout))
-            ]);
+            return yield fetch(url, Object.assign(Object.assign({}, opts), { headers: Object.assign({ "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "identity" }, (opts.headers || {})) }));
         }
         catch (e) {
             return null;

@@ -7,7 +7,6 @@ This is an Express-based remote addon wrapper built from the supplied Knox provi
 - Standard `/manifest.json` endpoint for Nuvio/Stremio-style addon installation, including the Knox Express logo/icon so the addon appears with branding in the installed-addons section.
 - `/stream/movie/:id.json` and `/stream/series/:id:season:episode.json` stream endpoints.
 - Fetches all enabled providers in parallel so one slow provider does not delay every other provider.
-- Provider timeout isolation so one failed scraper does not block all results.
 - Responsive TV/mobile web UI at `/`.
 - Enable/disable individual providers and enable/disable all.
 - Persistent provider state in `data/providers.json`.
@@ -37,7 +36,6 @@ For Fire TV/Android TV, the host running this server must be reachable from the 
 
 - `PORT=7000`
 - `TMDB_API_KEY=...` optional override for IMDb → TMDB resolution
-- `PROVIDER_TIMEOUT_MS=15000`
 - `PROVIDER_CONCURRENCY=3`
 
 ## Notes
@@ -49,12 +47,15 @@ Use only sources and content you are authorized to access.
 
 ## Vercel fetch behavior
 
-All enabled providers are requested in parallel. On Vercel, provider aggregation is capped below the platform function-duration limit so the endpoint can return partial results instead of timing out. The 10/15/20/30 second provider timeout options remain available for self-hosted deployments.
 
 
 ## v4.0.8 provider fetch fixes
 - Vercel region is set to Mumbai (`bom1`) to reduce latency and improve compatibility with India-focused upstream providers.
-- Vercel function max duration is 60 seconds; the selected 10/15/20/30 second provider timeout is respected.
 - Provider execution uses `Promise.allSettled()` so one rejected provider cannot abort the complete provider fetch.
 - Provider results remain isolated and are returned even when other providers fail.
 - If a provider's upstream site is unavailable or blocks Vercel, the addon cannot manufacture a stream; the dashboard logs the provider failure instead of hiding the failure behind a global error.
+
+### Deployment behavior
+
+- Provider/application timeout limits are disabled; scrapers are allowed to run until the hosting platform or upstream request itself ends.
+- Vercel function `maxDuration` is configured to 20 seconds.

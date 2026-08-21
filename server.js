@@ -10,8 +10,6 @@ const PORT = Number(process.env.PORT || 7000);
 const ROOT = __dirname;
 const STATE_FILE = path.join(ROOT, "data", "providers.json");
 const LOG_LIMIT = 200;
-const TIMEOUT_OPTIONS = [];
-const DEFAULT_TIMEOUT_MS = 0;
 const STREAM_CACHE_TTL_MS = 45000;
 const streamCache = new Map();
 const STATE_KEY = "knox:provider-state";
@@ -388,7 +386,7 @@ function cleanStream(s, providerName) {
   };
 }
 
-async function runProvider(id, type, tmdbId, season, episode, timeoutMs) {
+async function runProvider(id, type, tmdbId, season, episode) {
   const state = readProviders();
   const meta = state[id];
   const mod = loadProvider(id);
@@ -398,9 +396,7 @@ async function runProvider(id, type, tmdbId, season, episode, timeoutMs) {
   const started = Date.now();
 
   try {
-    // No application-level timeout: allow the provider to finish. Vercel/self-hosting
-    // may still impose its own platform execution limit.
-    const result = await Promise.resolve().then(() => mod.getStreams(tmdbId, nativeType, season, episode));
+    const result = await mod.getStreams(tmdbId, nativeType, season, episode);
     const streams = Array.isArray(result)
       ? result.map(s => cleanStream(s, meta.name)).filter(Boolean)
       : [];
@@ -495,14 +491,17 @@ app.post("/api/providers/toggle-all", async (req, res) => {
 });
 
 app.get("/api/settings", (_req, res) => {
+  const settings = readSettings();
   res.json({ timeoutMs: 0, timeoutOptions: [] });
 });
 
-app.post("/api/settings/timeout", (req, res) => {
+app.post("/api/settings/timeout", (_req, res) => {
   try {
-    const settings = writeSettings({ timeoutMs: 0 });
-    log("info", "Provider timeout changed", { timeoutMs });
-    return res.json(settings);
+    const current = readSettings();
+    const settings = writeSettings({ ...current, timeoutMs: 0 });
+    streamCache.clear();
+    log("info", "Provider timeout disabled (unlimited)");
+    return res.json({ ok: true, timeoutMs: 0, timeoutOptions: [] });
   } catch (e) {
     log("error", "Timeout setting failed", { error: e.message });
     return res.status(500).json({ error: "Could not save timeout setting", detail: e.message });
@@ -546,23 +545,36 @@ app.post("/api/cache/clear", (_req, res) => {
 // local addon refresh operation; it does not change provider enable/disable state.
 app.post("/api/scrapers/refresh", async (_req, res) => {
   const state = await hydrateProviders();
+  const enabledProviders = Object.values(state).filter(p => p.enabled === true);
+
+  // Reload every enabled scraper concurrently. A broken scraper is isolated
+  // and cannot prevent the other scraper modules from being refreshed.
+  const refreshSettled = await Promise.allSettled(enabledProviders.map(async (p) => {
+    const filename = path.basename(p.filename);
+    const file = path.join(ROOT, "providers", filename);
+    if (!fs.existsSync(file)) throw new Error("Provider file missing");
+    const resolved = require.resolve(file);
+    delete require.cache[resolved];
+    const mod = require(resolved);
+    if (!mod || typeof mod.getStreams !== "function") {
+      throw new Error("Provider does not export getStreams");
+    }
+    return p.id;
+  }));
+
   const refreshed = [];
   const failed = [];
-  for (const p of Object.values(state)) {
-    if (p.enabled !== true) continue;
-    try {
-      const filename = path.basename(p.filename);
-      const file = path.join(ROOT, "providers", filename);
-      if (!fs.existsSync(file)) throw new Error("Provider file missing");
-      const resolved = require.resolve(file);
-      delete require.cache[resolved];
-      const mod = require(resolved);
-      if (!mod || typeof mod.getStreams !== "function") throw new Error("Provider does not export getStreams");
-      refreshed.push(p.id);
-    } catch (e) {
-      failed.push({ id: p.id, error: e.message });
+  refreshSettled.forEach((result, index) => {
+    const provider = enabledProviders[index];
+    if (result.status === "fulfilled") {
+      refreshed.push(result.value);
+    } else {
+      failed.push({
+        id: provider.id,
+        error: result.reason?.message || String(result.reason)
+      });
     }
-  }
+  });
   const cleared = streamCache.size;
   streamCache.clear();
   scraperRefreshRevision += 1;
@@ -583,6 +595,32 @@ app.post("/api/scrapers/refresh", async (_req, res) => {
     scraperRefreshRevision,
     manifestRevision,
     manifestUrl: `/manifest.json`
+  });
+});
+
+app.get("/api/providers/diagnostics", async (_req, res) => {
+  const state = await hydrateProviders();
+  const entries = Object.values(state);
+  const results = await Promise.all(entries.map(async (p) => {
+    const filename = path.basename(p.filename || "");
+    const file = path.join(ROOT, "providers", filename);
+    const base = { id: p.id, name: p.name, enabled: p.enabled === true, filename };
+    if (!filename || !fs.existsSync(file)) return { ...base, loaded: false, error: "Provider file missing" };
+    try {
+      const resolved = require.resolve(file);
+      delete require.cache[resolved];
+      const mod = require(resolved);
+      return { ...base, loaded: Boolean(mod && typeof mod.getStreams === "function"), error: mod && typeof mod.getStreams === "function" ? null : "Missing getStreams export" };
+    } catch (e) {
+      return { ...base, loaded: false, error: e.message };
+    }
+  }));
+  res.json({
+    total: results.length,
+    enabled: results.filter(r => r.enabled).length,
+    loaded: results.filter(r => r.loaded).length,
+    failed: results.filter(r => !r.loaded),
+    providers: results
   });
 });
 
@@ -616,7 +654,6 @@ async function handleStream(req, res) {
 
   const state = await hydrateProviders();
   const enabled = Object.values(state).filter(p => p.enabled === true);
-  const timeoutMs = 0;
   const cacheKey = `${type}:${tmdbId}:${parsed.season || ""}:${parsed.episode || ""}:${enabled.map(p => p.id).join(",")}`;
   const cached = streamCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
@@ -633,9 +670,13 @@ async function handleStream(req, res) {
   // Start every enabled provider at once. There is no application-level timeout.
   const results = [];
   const startedAll = Date.now();
-  const settled = await Promise.allSettled(enabled.map((p) =>
-    runProvider(p.id, type, tmdbId, parsed.season, parsed.episode, 0)
-  ));
+  // IMPORTANT: create every promise before awaiting any result. This means
+  // all enabled scrapers start together instead of running one-by-one.
+  const providerTasks = enabled.map((p) => {
+    log("info", "Provider started", { provider: p.id });
+    return runProvider(p.id, type, tmdbId, parsed.season, parsed.episode);
+  });
+  const settled = await Promise.allSettled(providerTasks);
   for (let i = 0; i < settled.length; i++) {
     const item = settled[i];
     const provider = enabled[i];
@@ -652,7 +693,6 @@ async function handleStream(req, res) {
     successful: results.filter(r => r.streams.length > 0).length,
     streams: results.reduce((n, r) => n + r.streams.length, 0),
     ms: Date.now() - startedAll,
-    timeoutMs: 0
   });
 
   const streams = results.flatMap(r => r.streams);

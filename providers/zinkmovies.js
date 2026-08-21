@@ -38,17 +38,15 @@ function refreshDomains() { return __async(this, null, function* () { const _0x3
 }
 catch (_0x53cbf9) { } }); }
 function hdrs(_0x9212bf = {}) { const _0x27d929 = { _0x198d78: 0x97 }, _0x222913 = _0x4e9a2b; return __spreadValues({ 'User-Agent': currentUA, 'Accept-Language': _0x222913(_0x27d929._0x198d78) }, _0x9212bf); }
-var FETCH_TIMEOUT = 0x2ee0;
-function raceTimeout(_0x45e691) { const _0x4d3241 = _0x4e9a2b; return new Promise((_0x2280e0, _0x8dc273) => setTimeout(() => _0x8dc273(new Error(_0x4d3241(0xa7))), _0x45e691)); }
 function _0x24a9() { const _0x254aa7 = ['Edi2na', 'Ahr0Ca', 'BwfYyxrOAq', 'CgfKu3rHCNq', 'mtvXtNv5rMO', 'DgHLBG', 'DhLWzq', 'zw4TvvmSzw47Ct0WlJK', 'lM0ZDtG', 'Adi2nq', 'DgvZDa', 'Aw5JBhvKzxm', 'nZiWCa', 'AhvIy2XVDwq', 'C3vIC3rYAw5N', 'BgvUz3rO', 'BMfTzq', 'mJyXnJm3mLD0yLb3Dq', 'ndm5yZq3oge3nZfMmZvJmduWmJjMowzLywjJy2eWmwm', 'Dg9vChbLCKnHC2u', 'yuHsmgm', 'nJm2otrksK1Av2G', 'mta4mha', 'vgLTzw91Da', 'lNr4Da', 'ihWG8j+sVIa', 'lZ9Zpq', 'oty3mZe0t09tA2vQ', 'zhvHBa', 'BwfW', 'mJrbwMnKANG', 'ihWG', 'ihWGuW', 'CMvWBgfJzq', 'zgrWns4X', 'A2fUBMfKyq', 'ihWGAgqGFcbhzw1Tyq', 'ihWG8j+uIIbeB2XIEsbbDg1VCW', 'ANnVBG', 'ntCXndCWmMPcDLrUAq', 'C29Tzq', 'C3bSAxq', 'p2fWAv9RzxK9', 'mJe2mha', 'ihWG4PM+ierVBgj5ifzPC2LVBG', 'zMLSzq', 'mti5odqYmhbuuLHTuW', 'DgL0Bgu', 'AgrY', 'CMfJzq', 'tva0', 'AgfZt3DUuhjVCgvYDhK', 'zxHLyW', 'C2rY', 'DMfSDwu', 'pgrPDIbJBgfZCZ0IC2vYAwvJB250ywLUzxiIpG', 'C3rHCNrZv2L0Aa', 'C3vJy2vZCW', 'Dg9mB3DLCKnHC2u', 'ue9tva', 'EgXHpxm0Da', 'zxbPC29Kzq', 'D2vIzgW', 'AgrYAxa', 'yMvUz2fSAq', 'mtmXmgjRtezwzG', 'tw96AwXSys81lJaGkeXPBNv4oYbbBMrYB2LKideZoYbtts1tote4qIKGqxbWBgvxzwjlAxqVntm3lJm2icHlsfrntcWGBgLRzsbhzwnRBYKGq2HYB21LlZeXnI4WlJaUmcbnB2jPBguGu2fMyxjPlZuZnY4ZnG', 'D2vICMLW', 'CxvHBgL0Eq', 'DhjPBq', 'ndGWua', '8j+oPsbilJi2nq', 'Bw92Awu', 'CMvSzwfZzv9KyxrL', 'C29YDa', 'zMXHDa', 'Aw5KzxHpzG', 'r2vTBwe', 'mJe2ma', 'yxbWBgLJyxrPB24VEc13D3CTzM9YBs11CMXLBMnVzgvK', 'z2v0t3DUuhjVCgvYDhLtEw1IB2XZ', 'Dgv4Da', 'mZC0ntCYvM1Pt1fI', 'tuTw', 'Bwf0y2G', 'mtqZmJGYn3vdEMTIBW', 'Ahr0Chm6lY9PlwfYy2GTndaWlMTLEw1Pnde3zxH4lMnVBs8', 'yxrTB3m', 'ihWG8j+mKcbxruiTuMLW', 'Ahr0Chm6lY9UzxC0lNPPBMTJBg91zc5UzxqVC2vYDMvYlwHHBMrSzxiUCgHW', 'zM9SzgvY', 'ihWG8j+mIcbirfiXmcS', 'ndHXC2vpBuG', 'ihWG8j+mIcbtrfi', 'zMXVB3i', 't3jPz2LUywWTqxvKAw8', 'AgLUzgK', 'BM93', 'Agv2yW', 'zMLYC3rFywLYx2rHDgu', 'ChjVCgvYDhLjC0vUDw1LCMfIBgu', 'zw4TvvmSzw47Ct0WlJu', 'Ahr0Chm6lY9HCgKUDgHLBw92AwvKyI5VCMCVmY8', 'BMv4Da', 'CMvZB2X2zq', 'yxbWBgLJyxrPB24VANnVBG', 'D2vIlxjPCa', 'zg9SyNKGDMLZAw9U', 'BxvSDgK', 'txvSDgKTqxvKAw8', 'tw96AwXSys81lJaGkeXPBNv4oYbbBMrYB2LKide0oYbqAxHLBca4ifbYBYKGqxbWBgvxzwjlAxqVntm3lJm2icHlsfrntcWGBgLRzsbhzwnRBYKGq2HYB21LlZeYnc4WlJaUmcbnB2jPBguGu2fMyxjPlZuZnY4ZnG', 'vw5RBM93BIbtAxPL', 'tw96AwXSys81lJaGkgLqAg9UztSGq1bvigLqAg9UzsbpuYaXn18WigXPA2uGtwfJie9tifGPiefWCgXLv2vIs2L0lZyWns4XlJe1icHlsfrntcWGBgLRzsbhzwnRBYKGvMvYC2LVBI8XnY4Wie1VyMLSzs8XnuuXndGGu2fMyxjPlZyWnc4X', 'EMLUA21VDMLLCW', 'DgvSDwD1', 'mta4ma', 'ChvZAa']; _0x24a9 = function () { return _0x254aa7; }; return _0x24a9(); }
 function fetchText(_0x2e5a0c, _0x52fa21) { return __async(this, null, function* () { const _0x487faf = _0x4dda; try {
-    const _0x25554d = yield Promise[_0x487faf(0xc1)]([fetch(_0x2e5a0c, _0x52fa21 || {}), raceTimeout(FETCH_TIMEOUT)]);
+    const _0x25554d = yield fetch(_0x2e5a0c, _0x52fa21 || {});
     if (_0x25554d['ok'])
         return yield _0x25554d[_0x487faf(0xe1)]();
 }
 catch (_0x400ccf) { } return null; }); }
 function fetchJson(_0x43ff6c, _0x4098ff) { const _0x3480a7 = { _0x2c0f06: 0xc1 }; return __async(this, null, function* () { const _0x40bd45 = _0x4dda; try {
-    const _0x117050 = yield Promise[_0x40bd45(_0x3480a7._0x2c0f06)]([fetch(_0x43ff6c, _0x4098ff || {}), raceTimeout(FETCH_TIMEOUT)]);
+    const _0x117050 = yield fetch(_0x43ff6c, _0x4098ff || {});
     if (_0x117050['ok'])
         return yield _0x117050[_0x40bd45(0xb6)]();
 }
@@ -139,7 +137,7 @@ function resolveTpiLink(_0xa0e161) { const _0x5783f5 = { _0xb2382d: 0xdc, _0x315
 }
 catch (_0x208532) { } return null; }); }
 function serverHandler(_0x885959, _0x363984) { const _0x344bcf = { _0x47cfdf: 0x74, _0x362588: 0x84, _0x32b2f7: 0xb6, _0x514897: 0xc9 }; return __async(this, null, function* () { const _0x53c408 = _0x4dda; try {
-    const _0x2d0438 = yield Promise[_0x53c408(0xc1)]([fetch(_0x53c408(_0x344bcf._0x47cfdf), { 'method': 'POST', 'headers': { 'Content-Type': _0x53c408(_0x344bcf._0x362588), 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': currentUA }, 'body': JSON['stringify']({ 'server': _0x363984, 'random_id': _0x885959 }) }), raceTimeout(FETCH_TIMEOUT)]), _0x3cb59b = yield _0x2d0438[_0x53c408(_0x344bcf._0x32b2f7)]();
+    const _0x2d0438 = yield fetch(_0x53c408(_0x344bcf._0x47cfdf), { 'method': 'POST', 'headers': { 'Content-Type': _0x53c408(_0x344bcf._0x362588), 'X-Requested-With': 'XMLHttpRequest', 'User-Agent': currentUA }, 'body': JSON['stringify']({ 'server': _0x363984, 'random_id': _0x885959 }) }), _0x3cb59b = yield _0x2d0438[_0x53c408(_0x344bcf._0x32b2f7)]();
     if ((_0x3cb59b == null ? void 0x0 : _0x3cb59b[_0x53c408(_0x344bcf._0x514897)]) && _0x3cb59b['url'])
         return _0x3cb59b['url'];
 }

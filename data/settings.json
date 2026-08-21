@@ -1,4 +1,4 @@
 {
-  "timeoutMs": 15000,
+  "timeoutMs": 0,
   "dnsServers": []
 }
