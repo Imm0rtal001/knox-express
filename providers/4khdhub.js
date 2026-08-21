@@ -2,7 +2,7 @@
 
 const PROVIDER_NAME = "4kHdHub";
 const TMDB_API_KEY = "307b7b8ef035c6aa336900aef4e203bd";
-const DOMAINS_JSON_URL = "https://codeberg.org/eclipsia-404/eclipsia/raw/branch/main/urls.json";
+const TMDB_API_URL = "https://api.themoviedb.org/3";
 const MOBILE_UAS = [
   "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36",
   "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36",
@@ -12,20 +12,20 @@ const MOBILE_UAS = [
 let baseUrl = "https://4khdhub.one";
 let sessionUA = MOBILE_UAS[Math.floor(Math.random() * MOBILE_UAS.length)];
 
-const RE_QUALITY   = /(2160|1080|720|480)p|(4K|UHD)/i;
-const RE_YEAR      = /\b(19\d{2}|20\d{2})\b/;
-const RE_SIZE_CTX  = /(?:^|[\s>])(\d+\.?\d*)\s*(GB|MB)\b/i;
-const RE_HUBCLOUD  = /https?:\/\/hubcloud\.[a-z0-9]+\/drive\/[a-z0-9]+/ig;
-const RE_SXEX      = /S0*(\d+)[.\s_\-]*E0*(\d+)/i;
-const RE_EP        = /Episode\s*0*(\d+)/i;
-const RE_HEADER    = /<div[^>]*class=['"][^'"]*card-header[^'"]*['"][^>]*>([^<]+)</i;
-const RE_SIZE_TD   = /<td[^>]*>\s*File\s*Size\s*:\s*<\/td>\s*<td[^>]*>\s*([\d\.]+\s*[MGBtbi]+)\s*<\/td>/i;
-const RE_SIZE_STR  = /Size\s*:\s*<\/strong>\s*([\d\.]+\s*[MGBtbi]+)/i;
+const RE_QUALITY = /(2160|1080|720|480)p|(4K|UHD)/i;
+const RE_YEAR = /\b(19\d{2}|20\d{2})\b/;
+const RE_SIZE_CTX = /(?:^|[\s>])(\d+\.?\d*)\s*(GB|MB)\b/i;
+const RE_HUBCLOUD = /https?:\/\/hubcloud\.[a-z0-9]+\/drive\/[a-z0-9]+/ig;
+const RE_SXEX = /S0*(\d+)[.\s_\-]*E0*(\d+)/i;
+const RE_EP = /Episode\s*0*(\d+)/i;
+const RE_HEADER = /<div[^>]*class=['"][^'"]*card-header[^'"]*['"][^>]*>([^<]+)</i;
+const RE_SIZE_TD = /<td[^>]*>\s*File\s*Size\s*:\s*<\/td>\s*<td[^>]*>\s*([\d\.]+\s*[MGBtbi]+)\s*<\/td>/i;
+const RE_SIZE_STR = /Size\s*:\s*<\/strong>\s*([\d\.]+\s*[MGBtbi]+)/i;
 const RE_SLUG_JUNK = /^(movie|series)$|^\d+$/;
-const RE_NONALNUM  = /[^a-z0-9]/g;
-const RE_EXT       = /\.(mkv|mp4|avi|rar|zip)$/i;
-const RE_ZIP_RAR   = /\.zip|\.rar/;
-const RE_PIXEL     = /pixel\.hubcloud/;
+const RE_NONALNUM = /[^a-z0-9]/g;
+const RE_EXT = /\.(mkv|mp4|avi|rar|zip)$/i;
+const RE_ZIP_RAR = /\.zip|\.rar/;
+const RE_PIXEL = /pixel\.hubcloud/;
 
 const AUDIO_TABLE = [
   [/ddp.?51.*truehd.*71|truehd.*71.*ddp.?51/i, "DDP 5.1 + TrueHD 7.1"],
@@ -37,60 +37,71 @@ const AUDIO_TABLE = [
   [/aac/i, "AAC 5.1"],
 ];
 
-async function refreshDomains() {
-  try {
-    const res = await fetch(DOMAINS_JSON_URL, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (res && res.ok) {
-      const data = await res.json();
-      if (data && data["4khdhub"]) {
-        baseUrl = data["4khdhub"];
-      }
-    }
-  } catch (_) { }
-}
-
-function getHeaders(extra = {}) {
-  return {
+function getHeaders(extra) {
+  return Object.assign({
     "User-Agent": sessionUA,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    ...extra,
-  };
+  }, extra || {});
 }
 
 async function fetchText(url, options) {
   try {
-    const opts = { headers: getHeaders(), ...options };
-    const res = await fetch(url, opts);
+    const res = await fetch(url, Object.assign({ headers: getHeaders() }, options));
     return (res && res.ok) ? res.text() : null;
   } catch (_) { return null; }
 }
 
 async function fetchJson(url, options) {
   try {
-    const opts = { headers: getHeaders(), ...options };
-    const res = await fetch(url, opts);
+    const res = await fetch(url, Object.assign({ headers: getHeaders() }, options));
     return (res && res.ok) ? res.json() : null;
   } catch (_) { return null; }
 }
 
+function parseSizeMB(sizeStr) {
+  if (!sizeStr) return null;
+  const m = /(\d+\.?\d*)\s*(GB|MB)/i.exec(sizeStr);
+  if (!m) return null;
+  const val = parseFloat(m[1]);
+  return m[2].toUpperCase() === "GB" ? val * 1024 : val;
+}
+
+function calcMbps(sizeMB, runtimeMinutes) {
+  if (!sizeMB || !runtimeMinutes) return null;
+  const bits = sizeMB * 1024 * 1024 * 8;
+  const seconds = runtimeMinutes * 60;
+  const mbps = bits / seconds / 1000000;
+  return mbps.toFixed(1) + " Mbps";
+}
+
 async function getTMDBInfo(tmdbId, type) {
   const isTV = type === "tv";
-  let title = "", year = "", imdbId = "";
+  let title = "", year = "", imdbId = "", runtime = null;
   try {
     if (isTV) {
       const d = await fetchJson(
-        `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`
+        `${TMDB_API_URL}/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`
       );
-      if (d) { title = d.name; year = (d.first_air_date || "").slice(0, 4); imdbId = d.external_ids?.imdb_id || ""; }
+      if (d) {
+        title = d.name;
+        year = (d.first_air_date || "").slice(0, 4);
+        imdbId = (d.external_ids && d.external_ids.imdb_id) || "";
+        runtime = (d.episode_run_time && d.episode_run_time[0]) || null;
+      }
     } else {
       const d = await fetchJson(
-        `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}`
+        `${TMDB_API_URL}/movie/${tmdbId}?api_key=${TMDB_API_KEY}`
       );
-      if (d) { title = d.title; year = (d.release_date || "").slice(0, 4); imdbId = d.imdb_id || ""; }
+      if (d) {
+        title = d.title;
+        year = (d.release_date || "").slice(0, 4);
+        imdbId = d.imdb_id || "";
+        runtime = d.runtime != null ? d.runtime : null;
+      }
     }
   } catch (_) { }
-  return { title, year, imdbId, type: isTV ? "tv" : "movie" };
+  return { title, year, imdbId, runtime };
 }
 
 async function searchSite(title, year, imdbId, isSeries) {
@@ -100,8 +111,8 @@ async function searchSite(title, year, imdbId, isSeries) {
       if (posts && posts.length > 0) {
         return {
           url: posts[0].link,
-          title: posts[0].title?.rendered || title,
-          content: isSeries ? null : (posts[0].content?.rendered || ""),
+          title: (posts[0].title && posts[0].title.rendered) || title,
+          content: isSeries ? null : ((posts[0].content && posts[0].content.rendered) || ""),
         };
       }
     } catch (_) { }
@@ -181,8 +192,7 @@ function extractHubcloudLinks(html, season, episode, isSeries) {
       if (quality === "480P") continue;
 
       const sm = RE_SIZE_CTX.exec(ctxBefore);
-      const size = sm ? sm[1] + " " + sm[2] : "";
-      results.push({ url, quality, size });
+      results.push({ url, quality, size: sm ? sm[1] + " " + sm[2] : "" });
     } else {
       const context = scope.substring(Math.max(0, m.index - 1500), m.index);
 
@@ -195,14 +205,13 @@ function extractHubcloudLinks(html, season, episode, isSeries) {
       if (quality === "480P") continue;
 
       const sm = RE_SIZE_CTX.exec(context);
-      const size = sm ? sm[1] + " " + sm[2] : "";
-      results.push({ url, quality, size });
+      results.push({ url, quality, size: sm ? sm[1] + " " + sm[2] : "" });
     }
   }
   return results;
 }
 
-function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer, size) {
+function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer, size, runtime) {
   const qualityUp = (quality || "1080P").toUpperCase();
   const encodedUrl = streamUrl.replace(/ /g, "%20");
   const combined = (String(filename || "") + " " + String(sourceName || "") + " " + encodedUrl).toLowerCase();
@@ -229,31 +238,31 @@ function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer
   const isImax = /\bimax\b/.test(combined);
 
   let audio = "DDP 5.1";
-  for (const [re, label] of AUDIO_TABLE) {
-    if (re.test(combined)) { audio = label; break; }
+  for (let i = 0; i < AUDIO_TABLE.length; i++) {
+    if (AUDIO_TABLE[i][0].test(combined)) { audio = AUDIO_TABLE[i][1]; break; }
   }
   if (/\batmos\b/.test(combined)) audio += " Atmos";
 
+  const sizeMB = parseSizeMB(size);
+  const mbps = calcMbps(sizeMB, runtime);
+
   const mainTitle = [PROVIDER_NAME, qualityUp, size].filter(Boolean).join(" • ");
   const line1 = langParts.join(" • ");
-  const line2 = [source, isImax && "IMAX", hostLabel || "FSL"].filter(Boolean).join(" • ");
+  const line2 = [source, isImax && "IMAX", hostLabel || "FSL", mbps].filter(Boolean).join(" • ");
   const line3 = [bit10Tag, dvTag, hdrTag, codec, audio].filter(Boolean).join(" • ");
   const streamTitle = [line1, line2, line3].filter(Boolean).join("\n");
 
   return {
     name: mainTitle,
-    title: streamTitle,
+    title: mainTitle,
     size: streamTitle,
     url: encodedUrl,
     quality: qualityUp,
-    behaviorHints: {
-      notWebReady: true,
-      proxyHeaders: { request: { Referer: referer || "https://4khdhub.one/" } },
-    },
+    headers: { Referer: referer || "https://4khdhub.one/" },
   };
 }
 
-async function resolveHubCloud(link, fallbackTitle) {
+async function resolveHubCloud(link, fallbackTitle, runtime) {
   const { url, quality, size } = link;
   const streams = [];
   try {
@@ -295,7 +304,7 @@ async function resolveHubCloud(link, fallbackTitle) {
         continue;
       }
 
-      streams.push(makeStream(filename, host, streamUrl, quality, host, phpUrl, fileSize));
+      streams.push(makeStream(filename, host, streamUrl, quality, host, phpUrl, fileSize, runtime));
     }
   } catch (_) { }
   return streams;
@@ -316,17 +325,16 @@ function srcWeight(name) {
   return 1;
 }
 
-async function getStreams(tmdbId, type, season, episode) {
-  if (type === "tv" && (season == null || episode == null)) return [];
+async function getStreams(tmdbId, mediaType, season, episode) {
+  if (!tmdbId) return [];
+  if (mediaType !== "movie" && mediaType !== "tv") return [];
+  if (mediaType === "tv" && (season == null || episode == null)) return [];
 
-  const isSeries = type === "tv";
+  const isSeries = mediaType === "tv";
   let streams = [];
 
   try {
-    const [, info] = await Promise.all([
-      refreshDomains(),
-      getTMDBInfo(tmdbId, type),
-    ]);
+    const info = await getTMDBInfo(tmdbId, mediaType);
     if (!info.title) return streams;
 
     const result = await searchSite(info.title, info.year, info.imdbId, isSeries);
@@ -336,7 +344,7 @@ async function getStreams(tmdbId, type, season, episode) {
     if (!html) return streams;
 
     const links = extractHubcloudLinks(html, +season, +episode, isSeries);
-    const resolved = await Promise.all(links.map(l => resolveHubCloud(l, info.title)));
+    const resolved = await Promise.all(links.map(l => resolveHubCloud(l, info.title, info.runtime)));
     streams = resolved.flat();
 
     streams.sort((a, b) => {

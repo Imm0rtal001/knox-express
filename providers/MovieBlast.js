@@ -76,10 +76,10 @@ function toStream(loadUrl) {
     const signed = generateSignedUrl(httpsify(loadUrl.link));
     const quality = matchQualityFromString(loadUrl.server);
     return {
+        name: `MovieBlast • ${quality}`,
+        title: `MovieBlast • ${quality}`,
         url: signed,
         quality,
-        title: `MovieBlast • ${quality}`,
-        name: `MovieBlast • ${quality}`,
         headers: {
             "Connection": "Keep-Alive",
             "Icy-MetaData": "1",

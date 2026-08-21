@@ -313,7 +313,7 @@ async function resolveStreamsFromQualities(qualities) {
       const formatted = formatTitle(q.label, null, q.quality);
       return {
         name: PROVIDER_NAME,
-        title: formatted,
+        title: PROVIDER_NAME,
         url: directUrl,
         size: formatted,
         headers: { Referer: `${ECLIPSIA_BASE}/` },

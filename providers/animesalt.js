@@ -5,7 +5,7 @@ const TMDB_API_KEY = "307b7b8ef035c6aa336900aef4e203bd";
 
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36",
-  "Referer": "https://animesalt.link",
+  "Referer": "https://animesalt.link/",
 };
 
 async function fetchHtml(url, options = {}) {
@@ -206,7 +206,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
 
     return [{
       name: "AnimeSalt",
-      title: `${title}${episodeLabel} • 1080p`,
+      title: "AnimeSalt",
       url: stream.url,
       quality: "1080p",
       headers: {

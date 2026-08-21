@@ -1,7 +1,7 @@
 "use strict";
 
-const cheerio = require("cheerio");
-const BASE_URL = "https://new3.hdhub4u.cl";
+const cheerio = require("cheerio-without-node-native");
+const BASE_URL = "https://new1.hdhub4u.af";
 const SEARCH_ENDPOINT = "https://search.pingora.fyi/collections/post/documents/search";
 const TMDB_ENDPOINT = "https://api.themoviedb.org/3";
 const TMDB_KEY = "307b7b8ef035c6aa336900aef4e203bd";

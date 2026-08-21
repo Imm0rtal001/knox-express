@@ -1,7 +1,5 @@
 "use strict"
 
-const cheerio = require("cheerio");
-
 const TMDB_KEY = "307b7b8ef035c6aa336900aef4e203bd";
 const BASE_URL = "https://new2.moviesdrive.christmas";
 const REQUEST_HEADERS = {
@@ -136,7 +134,7 @@ async function resolveServerLinks(url) {
 function buildStreamEntry(stream, displayTitle) {
   return {
     name: `MoviesDrive • ${stream.name}`,
-    title: `${displayTitle} • ${stream.quality}p${stream.size ? ` • ${stream.size}` : ""}`,
+    title: `MoviesDrive • ${stream.name}`,
     url: stream.url,
     quality: stream.quality,
     ...(stream.size ? { size: stream.size } : {}),
