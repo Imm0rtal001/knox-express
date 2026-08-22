@@ -1,3 +1,5 @@
+const PROVIDER_FETCH_TIMEOUT_MS = 60000;
+
 "use strict";
 
 const PROVIDER_NAME = "4kHdHub";
@@ -47,14 +49,22 @@ function getHeaders(extra) {
 
 async function fetchText(url, options) {
   try {
-    const res = await fetch(url, Object.assign({ headers: getHeaders() }, options));
+    const opts = Object.assign({ headers: getHeaders() }, options || {});
+    if (!opts.signal && typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+      opts.signal = AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS);
+    }
+    const res = await fetch(url, opts);
     return (res && res.ok) ? res.text() : null;
   } catch (_) { return null; }
 }
 
 async function fetchJson(url, options) {
   try {
-    const res = await fetch(url, Object.assign({ headers: getHeaders() }, options));
+    const opts = Object.assign({ headers: getHeaders() }, options || {});
+    if (!opts.signal && typeof AbortSignal !== "undefined" && AbortSignal.timeout) {
+      opts.signal = AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS);
+    }
+    const res = await fetch(url, opts);
     return (res && res.ok) ? res.json() : null;
   } catch (_) { return null; }
 }
@@ -255,7 +265,14 @@ function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer
   return {
     name: mainTitle,
     title: mainTitle,
-    size: streamTitle,
+    // The HubCloud page exposes the real release filename and file size.
+    // Preserve both instead of reducing them to a display-only string.
+    filename: filename || "",
+    releaseFilename: filename || "",
+    size: size || "",
+    description: streamTitle,
+    sourceProvider: sourceName || hostLabel || "",
+    provider: PROVIDER_NAME,
     url: encodedUrl,
     quality: qualityUp,
     headers: { Referer: referer || "https://4khdhub.one/" },

@@ -202,7 +202,22 @@ async function scrapeHubCloud(url, referer) {
     const streams = [];
     $("a.btn[href]").each((_, el) => {
       const href = $(el).attr("href");
-      if (href && isStreamable(href)) streams.push({ url: href, size, title: header });
+      if (href && isStreamable(href)) {
+        // Keep the release filename and server URL metadata all the way to the
+        // addon response. The central normalizer uses these fields to render
+        // provider cards with filename, size, source/server and codec badges.
+        streams.push({
+          url: href,
+          size,
+          title: header,
+          filename: header,
+          releaseFilename: header,
+          provider: /pixeldrain\.com/i.test(href) ? "PixelDrain"
+            : /fsl-buckets\.life|\.r2\.dev/i.test(href) ? "FSLv2"
+            : /hub\.(?:latent|whistle)/i.test(href) ? "FSL"
+            : "HDHub"
+        });
+      }
     });
     return streams;
   } catch { return []; }
@@ -300,9 +315,15 @@ async function getStreams(tmdbId, mediaType = "movie", season = null, episode = 
       const formatted = formatTitle(s.title, s.size);
       streams.push({
         name: `HDHub4u${quality ? ` • ${quality}` : ""}`,
-        title: `HDHub4u${quality ? ` • ${quality}` : ""}`,
+        title: s.title || `HDHub4u${quality ? ` • ${quality}` : ""}`,
         url: s.url,
-        size: formatted,
+        size: s.size || "",
+        filename: s.filename || s.title || "",
+        releaseFilename: s.releaseFilename || s.title || "",
+        quality,
+        provider: s.provider || "HDHub",
+        sourceProvider: s.provider || "",
+        description: formatted,
       });
     }
     return streams;

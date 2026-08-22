@@ -233,6 +233,7 @@ function firstValue(obj, keys) {
 function normalizeFileSize(value) {
   if (!value) return "";
   const text = String(value).replace(/\s+/g, " ").trim();
+  if (/^(unknown|n\/?a|na|null|undefined|-)$/i.test(text)) return "";
   const m = text.match(/\b(\d+(?:\.\d+)?)\s*(TB|GB|MB|KB)\b/i);
   if (!m) return text;
   return `${m[1]} ${m[2].toUpperCase()}`;
@@ -241,11 +242,24 @@ function normalizeFileSize(value) {
 function detectMediaMeta(s) {
   const raw = [
     s?.title, s?.name, s?.quality, s?.description, s?.filename,
-    s?.fileName, s?.label, s?.release, s?.releaseTitle
+    s?.fileName, s?.label, s?.release, s?.releaseTitle, s?.displayName,
+    s?.server, s?.serverName, s?.provider, s?.sourceProvider,
+    s?.mediaInfo?.quality, s?.mediaInfo?.resolution, s?.mediaInfo?.source,
+    s?.mediaInfo?.size, s?.mediaInfo?.language, s?.mediaInfo?.audio,
+    s?.mediaInfo?.codec, s?.mediaInfo?.hdr, s?.mediaInfo?.bitDepth,
+    s?.mediaInfo?.subtitles, s?.mediaInfo?.bitrate
   ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   const upper = raw.toUpperCase();
 
-  let quality = firstValue(s, ["quality", "resolution", "videoQuality", "video_quality"]);
+  let quality = firstValue(s, ["quality", "resolution", "videoQuality", "video_quality"])
+    || firstValue(s?.mediaInfo, ["quality", "resolution", "videoQuality", "video_quality"]);
+  if (/^(unknown|n\/?a|na|auto|hd)$/i.test(String(quality || ""))) quality = "";
+  if (quality) {
+    const q = String(quality).toLowerCase();
+    if (/^(4k|uhd|2160)$/.test(q)) quality = "2160p";
+    else if (/^(fhd|full\s*hd|1080)$/.test(q)) quality = "1080p";
+    else if (/^(hd|720)$/.test(q)) quality = "720p";
+  }
   if (!quality) {
     if (/\b(2160P|2160|4K|UHD)\b/i.test(raw)) quality = "2160p";
     else if (/\b(1440P|1440)\b/i.test(raw)) quality = "1440p";
@@ -256,13 +270,14 @@ function detectMediaMeta(s) {
 
   let fileSize = normalizeFileSize(firstValue(s, [
     "fileSize", "filesize", "size", "file_size", "contentLength", "content_length"
-  ]));
+  ]) || firstValue(s?.mediaInfo, ["fileSize", "filesize", "size", "file_size", "contentLength", "content_length"]));
   if (!fileSize) {
     const m = raw.match(/\b\d+(?:\.\d+)?\s*(?:TB|GB|MB|KB)\b/i);
     if (m) fileSize = normalizeFileSize(m[0]);
   }
 
-  let language = firstValue(s, ["language", "lang", "languages", "audioLanguage", "audio_language"]);
+  let language = firstValue(s, ["language", "lang", "languages", "audioLanguage", "audio_language"])
+    || firstValue(s?.mediaInfo, ["language", "lang", "languages", "audioLanguage", "audio_language"]);
   if (!language) {
     const langs = [];
     const checks = [
@@ -287,6 +302,9 @@ function detectMediaMeta(s) {
   let audio = firstValue(s, [
     "audio", "sound", "audioCodec", "audio_codec", "audioFormat", "audio_format",
     "audioChannels", "audio_channels"
+  ]) || firstValue(s?.mediaInfo, [
+    "audio", "sound", "audioCodec", "audio_codec", "audioFormat", "audio_format",
+    "audioChannels", "audio_channels"
   ]);
   if (!audio) {
     if (/\b(ATMOS|DOLBY\s*ATMOS)\b/i.test(raw)) audio = "Dolby Atmos";
@@ -297,7 +315,11 @@ function detectMediaMeta(s) {
   }
 
   const codec = firstValue(s, ["codec", "videoCodec", "video_codec"])
-    || (/(HEVC|H\.265|X265)/i.test(raw) ? "HEVC" : /(AVC|H\.264|X264)/i.test(raw) ? "H.264" : "");
+    || firstValue(s?.mediaInfo, ["codec", "videoCodec", "video_codec"])
+    || (/(HEVC|H\.265|X265)/i.test(raw) ? "HEVC"
+      : /(AVC|H\.264|X264)/i.test(raw) ? "H.264"
+      : /\bAV1\b/i.test(raw) ? "AV1"
+      : /\bVP9\b/i.test(raw) ? "VP9" : "");
 
   let source = firstValue(s, ["source", "releaseSource", "release_source", "mediaSource", "media_source"]);
   if (!source) {
@@ -309,46 +331,288 @@ function detectMediaMeta(s) {
     else if (/\bDVDRIP\b/i.test(raw)) source = "DVDRip";
   }
 
-  const bitDepth = firstValue(s, ["bitDepth", "bit_depth"]) || (/\b10[- ]?BIT\b/i.test(raw) ? "10-bit" : /\b8[- ]?BIT\b/i.test(raw) ? "8-bit" : "");
-  const channels = firstValue(s, ["channels", "audioChannels", "audio_channels"]) || (/(7\.1|5\.1|2\.0|STEREO)/i.test(raw) ? (raw.match(/\b(7\.1|5\.1|2\.0)\b/i)?.[1] || (/STEREO/i.test(raw) ? "2.0" : "")) : "");
-  const subtitles = firstValue(s, ["subtitles", "subtitle", "subs", "sub"]);
+  const bitDepth = firstValue(s, ["bitDepth", "bit_depth"]) || firstValue(s?.mediaInfo, ["bitDepth", "bit_depth"]) || (/\b10[- ]?BIT\b/i.test(raw) ? "10-bit" : /\b8[- ]?BIT\b/i.test(raw) ? "8-bit" : "");
+  const channels = firstValue(s, ["channels", "audioChannels", "audio_channels"])
+    || firstValue(s?.mediaInfo, ["channels", "audioChannels", "audio_channels"])
+    || (raw.match(/(?:AAC|DDP|DD|DTS|TRUEHD)[^0-9]*(7\.1|5\.1|2\.0)/i)?.[1] || "")
+    || (raw.match(/\b(7\.1|5\.1|2\.0)\b/i)?.[1] || (/STEREO/i.test(raw) ? "2.0" : ""));
+  const subtitles = firstValue(s, ["subtitles", "subtitle", "subs", "sub"])
+    || firstValue(s?.mediaInfo, ["subtitles", "subtitle", "subs", "sub"])
+    || (/(\bESUB\b|\bESUBS\b|\bSUBBED\b|\bSUBS\b|\bHC\b|\bHARDCODED\b)/i.test(raw) ? "Embedded" : "");
   const multiAudio = Boolean(s?.multiAudio || s?.multi_audio || /\b(MULTI[- ]?AUDIO|MULTI AUDIO|DUAL[- ]?AUDIO|DUAL AUDIO|MULTI)/i.test(raw));
-  const bitrate = firstValue(s, ["bitrate", "videoBitrate", "video_bitrate"]);
+  const bitrate = firstValue(s, ["bitrate", "videoBitrate", "video_bitrate"])
+    || firstValue(s?.mediaInfo, ["bitrate", "videoBitrate", "video_bitrate"]);
   const hdr = firstValue(s, ["hdr", "dynamicRange", "dynamic_range"])
+    || firstValue(s?.mediaInfo, ["hdr", "dynamicRange", "dynamic_range"])
     || (/\bHDR10\+\b/i.test(raw) ? "HDR10+" : /\bHDR10\b/i.test(raw) ? "HDR10" : /\bDV|DOLBY\s*VISION\b/i.test(raw) ? "Dolby Vision" : "");
 
   return { quality, fileSize, language, audio, codec, hdr, source, bitDepth, channels, subtitles, multiAudio, bitrate };
 }
 
-function cleanStream(s, providerName) {
-  if (!s || typeof s !== "object" || !s.url) return null;
+function normalizeReleaseFilename(value) {
+  if (!value) return "";
+  return String(value)
+    .replace(/\\/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const name = String(s.name || providerName).trim();
-  const rawTitle = String(s.title || s.name || providerName).replace(/\s+/g, " ").trim();
-  const meta = detectMediaMeta(s);
-  const titleParts = [rawTitle];
+function detectProviderSource(s, providerName) {
+  const raw = [
+    s?.provider, s?.sourceProvider, s?.server, s?.serverName, s?.host,
+    s?.extractor, s?.service, s?.name, s?.title, s?.filename, s?.releaseFilename,
+    s?.url
+  ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
+  const known = [
+    ["FSLv2", /\bFSLv2\b/i],
+    ["FSL", /\bFSL\b/i],
+    ["PixelDrain", /\bPixelDrain\b/i],
+    ["HubCloud", /\bHubCloud\b/i],
+    ["HubDrive", /\bHubDrive\b/i],
+    ["VCloud", /\bVCloud\b/i],
+    ["StreamWish", /\bStreamWish\b/i],
+    ["StreamTape", /\bStreamTape\b/i],
+    ["DoodStream", /\bDoodStream\b/i],
+    ["Mega", /\bMega(?:\.nz)?\b/i],
+    ["DriveSeed", /\bDriveSeed\b/i],
+    ["ResumeCloud", /\bResumeCloud\b/i],
+    ["ResumeBot", /\bResumeBot\b/i],
+    ["Direct", /\bDirect(?:\s+Download)?\b/i],
+    ["Worker", /\bWorker\b/i],
+    ["Telegram", /\bTelegram\b/i],
+    ["GDrive", /\b(?:GDrive|Google\s*Drive)\b/i],
+    ["MediaFire", /\bMediaFire\b/i],
+    ["OneDrive", /\bOneDrive\b/i],
+    ["GoFile", /\bGoFile\b/i],
+    ["FilePress", /\bFilePress\b/i],
+    ["Vimeo", /\bVimeo\b/i],
+    ["YouTube", /\bYouTube\b/i]
+  ];
+
+  for (const [label, re] of known) {
+    if (re.test(raw)) return label;
+  }
+
+  // A number of scrapers only return the resolved URL. Infer the delivery
+  // service from that URL so clients can show the same provider/server line
+  // even when the individual scraper did not expose a separate field.
+  const url = String(s?.url || "").toLowerCase();
+  if (/pixeldrain\.com/.test(url)) return "PixelDrain";
+  if (/fsl-buckets\.life|\.r2\.dev/.test(url)) return "FSLv2";
+  if (/\b(?:hub\.(?:latent|whistle)|fsl)\b/.test(url)) return "FSL";
+  if (/hubcloud/.test(url)) return "HubCloud";
+  if (/hubdrive/.test(url)) return "HubDrive";
+  if (/vcloud/.test(url)) return "VCloud";
+  if (/streamwish/.test(url)) return "StreamWish";
+  if (/streamtape/.test(url)) return "StreamTape";
+  if (/doodstream|dood\./.test(url)) return "DoodStream";
+  return firstValue(s, ["server", "serverName", "extractor", "service", "sourceProvider"]) || "";
+}
+
+function looksLikeReleaseFilename(value) {
+  const text = normalizeReleaseFilename(value);
+  if (!text || /[\u{1F300}-\u{1FAFF}]/u.test(text) || /[|•]/.test(text)) return false;
+  if (/\.(mkv|mp4|avi|mov|webm|ts|m2ts)$/i.test(text)) return true;
+  const hasYear = /\b(?:19|20)\d{2}\b/.test(text);
+  const hasQuality = /\b(?:2160p|1440p|1080p|720p|576p|480p|4k|uhd|fhd|hd)\b/i.test(text);
+  const hasSource = /\b(?:WEB[- .]?DL|WEB[- .]?Rip|Blu[- .]?Ray|BRRip|BDRip|HDTV|DVDRip|Remux)\b/i.test(text);
+  const hasCodec = /\b(?:x264|x265|h\.?264|h\.?265|hevc|avc|av1|vp9)\b/i.test(text);
+  return (hasYear && hasQuality && (hasSource || hasCodec));
+}
+
+function extractReleaseFilename(s, rawTitle) {
+  // A filename is only considered trustworthy when the provider explicitly
+  // supplied one, Content-Disposition supplied one, or the title itself has
+  // the unmistakable shape of a release filename. Never turn a UI label such
+  // as "Provider 1080p" into a fake filename.
+  const explicit = firstValue(s, [
+    "filename", "fileName", "file_name", "releaseFilename", "releaseFileName",
+    "fileTitle", "file_title"
+  ]);
+  if (explicit && looksLikeReleaseFilename(explicit)) return normalizeReleaseFilename(explicit);
+
+  const candidates = [
+    firstValue(s, ["contentDispositionFilename", "content_disposition_filename"]),
+    firstValue(s?.metadata, ["filename", "releaseFilename"]),
+    firstValue(s?.mediaInfo, ["filename", "releaseFilename"]),
+    rawTitle
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const clean = normalizeReleaseFilename(candidate);
+    if (looksLikeReleaseFilename(clean)) return clean;
+  }
+  return "";
+}
+
+function buildStreamDisplay(s, providerName, meta, rawTitle, releaseFilename, providerSource) {
+  const quality = meta.quality || "";
+  const displayName = `${providerName}${quality ? ` ${quality}` : ""}`.trim();
+  const size = meta.fileSize || "";
+  const sourceLabel = [providerSource, providerName]
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .join(" | ");
+  const detailLine = [
+    providerSource ? `[${providerSource}]` : "",
+    size ? `[💾 ${size}]` : ""
+  ].filter(Boolean).join(" ");
+
+  const lines = [];
+  if (detailLine) lines.push(detailLine);
+  if (releaseFilename) lines.push(releaseFilename);
+  if (sourceLabel) lines.push(sourceLabel);
+
+  const displayCodec = meta.codec === "H.264" ? "AVC" : meta.codec === "H.265" ? "HEVC" : meta.codec;
+  const displaySize = meta.fileSize ? (() => {
+    const m = String(meta.fileSize).match(/^(\d+(?:\.\d+)?)\s*(GB|MB|KB)$/i);
+    if (!m) return meta.fileSize;
+    const value = Number(m[1]);
+    const unit = m[2].toUpperCase();
+    return unit === "GB" ? `SIZE ${value.toFixed(1)} GB` : `SIZE ${m[1]} ${unit}`;
+  })() : "";
   const badges = [
-    meta.quality,
     meta.source,
-    meta.fileSize,
-    meta.language,
-    meta.audio,
-    meta.channels,
-    meta.codec,
+    meta.quality,
+    displayCodec,
+    displaySize,
     meta.hdr,
     meta.bitDepth,
     meta.multiAudio ? "Multi-Audio" : "",
-    meta.subtitles ? "Subtitles" : "",
-    meta.bitrate
+    meta.subtitles ? "Subtitles" : ""
   ].filter(Boolean);
 
+  return {
+    displayName,
+    detailLine,
+    sourceLabel,
+    description: lines.join("\n"),
+    badges: [...new Set(badges)]
+  };
+}
+
+
+const REMOTE_META_TIMEOUT_MS = Math.max(800, Number(process.env.KNOX_METADATA_TIMEOUT_MS || 1800));
+let remoteMetaActive = 0;
+const REMOTE_META_MAX_CONCURRENCY = 8;
+const remoteMetaQueue = [];
+
+function runRemoteMetaTask(task) {
+  return new Promise(resolve => {
+    remoteMetaQueue.push({ task, resolve });
+    drainRemoteMetaQueue();
+  });
+}
+
+function drainRemoteMetaQueue() {
+  while (remoteMetaActive < REMOTE_META_MAX_CONCURRENCY && remoteMetaQueue.length) {
+    const item = remoteMetaQueue.shift();
+    remoteMetaActive += 1;
+    Promise.resolve().then(item.task).catch(() => null).then(result => {
+      remoteMetaActive -= 1;
+      item.resolve(result);
+      drainRemoteMetaQueue();
+    });
+  }
+}
+
+function headerValue(headers, names) {
+  if (!headers || typeof headers !== "object") return "";
+  const entries = Object.entries(headers);
+  for (const name of names) {
+    const hit = entries.find(([k]) => String(k).toLowerCase() === name.toLowerCase());
+    if (hit && hit[1] != null) return String(hit[1]);
+  }
+  return "";
+}
+
+function parseContentDispositionFilename(value) {
+  if (!value) return "";
+  const utf = String(value).match(/filename\*\s*=\s*(?:UTF-8'')?([^;]+)/i);
+  const normal = String(value).match(/filename\s*=\s*"([^"]+)"/i) || String(value).match(/filename\s*=\s*([^;]+)/i);
+  const raw = (utf?.[1] || normal?.[1] || "").trim();
+  if (!raw) return "";
+  try { return normalizeReleaseFilename(decodeURIComponent(raw.replace(/^"|"$/g, ""))); } catch (_) {
+    return normalizeReleaseFilename(raw.replace(/^"|"$/g, ""));
+  }
+}
+
+function bytesToFileSize(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i += 1; }
+  const digits = i >= 3 ? 2 : i >= 2 ? 1 : 0;
+  return `${v.toFixed(digits)} ${units[i]}`;
+}
+
+async function fetchRemoteMetadata(s) {
+  if (!s?.url || !/^https?:\/\//i.test(String(s.url))) return {};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REMOTE_META_TIMEOUT_MS);
+  try {
+    const headers = {
+      "User-Agent": "Knox-Express/4.0",
+      "Accept": "*/*"
+    };
+    if (s.headers && typeof s.headers === "object") {
+      for (const [k, v] of Object.entries(s.headers)) {
+        if (v != null && typeof v !== "object") headers[k] = String(v);
+      }
+    }
+    const response = await fetch(String(s.url), { method: "HEAD", redirect: "follow", headers, signal: controller.signal });
+    const contentLength = response.headers.get("content-length") || "";
+    const disposition = response.headers.get("content-disposition") || "";
+    const contentType = response.headers.get("content-type") || "";
+    const isPlaylist = /(?:mpegurl|vnd\.apple\.mpegurl)/i.test(contentType) || /\.(?:m3u8)(?:$|[?#])/i.test(String(response.url || s.url));
+    return {
+      fileSize: isPlaylist ? "" : bytesToFileSize(contentLength),
+      filename: parseContentDispositionFilename(disposition),
+      contentType
+    };
+  } catch (_) {
+    return {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function mergeRemoteMetadata(stream, remote) {
+  if (!remote || typeof remote !== "object") return stream;
+  if (!stream.fileSize && remote.fileSize) stream.fileSize = remote.fileSize;
+  if (!stream.size && remote.fileSize) stream.size = remote.fileSize;
+  if (!stream.filename && remote.filename) stream.filename = remote.filename;
+  if (!stream.releaseFilename && remote.filename) stream.releaseFilename = remote.filename;
+  if (!stream.releaseTitle && remote.filename) stream.releaseTitle = remote.filename;
+  if (remote.contentType) stream.contentType = remote.contentType;
+  return stream;
+}
+
+function cleanStream(s, providerName, providerId) {
+  if (!s || typeof s !== "object" || !s.url) return null;
+
+  const name = String(s.name || providerName).trim();
+  const rawTitle = String(
+    s.filename || s.fileName || s.releaseFilename || s.releaseFileName || s.releaseTitle || s.title || s.name || s.description || providerName
+  ).replace(/\s+/g, " ").trim();
+  const meta = detectMediaMeta(s);
+  const releaseFilename = extractReleaseFilename(s, rawTitle);
+  const providerSource = detectProviderSource(s, providerName);
+  const display = buildStreamDisplay(s, providerName, meta, rawTitle, releaseFilename, providerSource);
+
+  // Keep the original title available for clients that already use it, while
+  // exposing a clean, Nuvio-friendly display title and structured scraper data.
+  const titleParts = [rawTitle];
+  const badges = display.badges;
   for (const badge of badges) {
     if (!rawTitle.toLowerCase().includes(String(badge).toLowerCase())) titleParts.push(`[${badge}]`);
   }
 
-  const title = titleParts.join(" ").replace(/\s{2,}/g, " ").trim();
-  const description = [
+  const title = display.description || rawTitle || display.displayName;
+  const generatedDescription = [
     meta.quality && `Quality: ${meta.quality}`,
     meta.source && `Source: ${meta.source}`,
     meta.fileSize && `Size: ${meta.fileSize}`,
@@ -364,11 +628,24 @@ function cleanStream(s, providerName) {
   ].filter(Boolean).join(" • ");
 
   return {
-    name,
+    name: display.displayName || name,
     title,
     url: s.url,
     quality: meta.quality || undefined,
+    resolution: meta.quality || undefined,
     fileSize: meta.fileSize || undefined,
+    size: meta.fileSize || undefined,
+    filename: releaseFilename || undefined,
+    releaseFilename: releaseFilename || undefined,
+    releaseTitle: rawTitle || undefined,
+    provider: providerName,
+    providerName,
+    providerId: providerId || s.providerId || undefined,
+    sourceProvider: providerSource || undefined,
+    scraper: providerSource || providerName,
+    server: providerSource || undefined,
+    serverName: providerSource || undefined,
+    release: releaseFilename || undefined,
     language: meta.language || undefined,
     audio: meta.audio || undefined,
     sound: meta.audio || undefined,
@@ -380,8 +657,58 @@ function cleanStream(s, providerName) {
     subtitles: meta.subtitles || undefined,
     multiAudio: meta.multiAudio || undefined,
     bitrate: meta.bitrate || undefined,
-    description: s.description || description || undefined,
+    badges: display.badges,
+    detailLine: display.detailLine || undefined,
+    sourceLabel: display.sourceLabel || undefined,
+    display: {
+      name: display.displayName || name,
+      detailLine: display.detailLine || "",
+      filename: releaseFilename || "",
+      source: display.sourceLabel || "",
+      badges: display.badges,
+    },
+    mediaInfo: {
+      quality: meta.quality || "",
+      source: meta.source || "",
+      size: meta.fileSize || "",
+      language: meta.language || "",
+      audio: meta.audio || "",
+      channels: meta.channels || "",
+      codec: meta.codec || "",
+      hdr: meta.hdr || "",
+      bitDepth: meta.bitDepth || "",
+      subtitles: meta.subtitles || "",
+      multiAudio: Boolean(meta.multiAudio),
+      bitrate: meta.bitrate || "",
+      fileFormat: (() => { const m = String(releaseFilename || "").match(/\.([a-z0-9]{2,5})$/i); return m ? m[1].toUpperCase() : ""; })(),
+    },
+    description: display.description || generatedDescription || undefined,
     headers: s.headers || undefined,
+    contentType: s.contentType || undefined,
+    metadata: {
+      version: 2,
+      provider: providerName,
+      providerId: providerId || s.providerId || "",
+      scraper: providerSource || providerName,
+      server: providerSource || providerName,
+      filename: releaseFilename || "",
+      quality: meta.quality || "",
+      resolution: meta.quality || "",
+      size: meta.fileSize || "",
+      language: meta.language || "",
+      audio: meta.audio || "",
+      channels: meta.channels || "",
+      codec: meta.codec || "",
+      source: meta.source || "",
+      hdr: meta.hdr || "",
+      bitDepth: meta.bitDepth || "",
+      subtitles: meta.subtitles || "",
+      multiAudio: Boolean(meta.multiAudio),
+      bitrate: meta.bitrate || "",
+      badges: display.badges,
+      fileFormat: (() => { const m = String(releaseFilename || "").match(/\.([a-z0-9]{2,5})$/i); return m ? m[1].toUpperCase() : ""; })(),
+      extension: (() => { const m = String(releaseFilename || "").match(/\.([a-z0-9]{2,5})$/i); return m ? `.${m[1].toLowerCase()}` : ""; })()
+    },
     behaviorHints: s.behaviorHints || undefined
   };
 }
@@ -397,9 +724,25 @@ async function runProvider(id, type, tmdbId, season, episode) {
 
   try {
     const result = await mod.getStreams(tmdbId, nativeType, season, episode);
-    const streams = Array.isArray(result)
-      ? result.map(s => cleanStream(s, meta.name)).filter(Boolean)
+    let streams = Array.isArray(result)
+      ? result.map(s => cleanStream(s, meta.name, id)).filter(Boolean)
       : [];
+
+    // Enrich every provider uniformly. Provider-specific scrapers remain the
+    // source of truth, while a lightweight HEAD request fills missing size /
+    // filename data from the resolved download endpoint when available.
+    if (streams.length) {
+      streams = await Promise.all(streams.map(async stream => {
+        const needsRemote = !stream.fileSize || !stream.filename;
+        if (!needsRemote) return stream;
+        const remote = await runRemoteMetaTask(() => fetchRemoteMetadata(stream));
+        if (!remote || (!remote.fileSize && !remote.filename)) return stream;
+        const raw = { ...stream };
+        mergeRemoteMetadata(raw, remote);
+        const rebuilt = cleanStream(raw, meta.name, id);
+        return rebuilt || stream;
+      }));
+    }
     log("info", "Provider completed", { provider: id, count: streams.length, ms: Date.now() - started });
     return { id, name: meta.name, streams };
   } catch (e) {

@@ -10,7 +10,7 @@ This is an Express-based remote addon wrapper built from the supplied Knox provi
 - Responsive TV/mobile web UI at `/`.
 - Enable/disable individual providers and enable/disable all.
 - Persistent provider state in `data/providers.json`.
-- Nuvio badge-friendly stream titles: quality metadata is preserved in the title so Nuvio badge regexes can match it.
+- Nuvio-friendly provider stream metadata: provider, scraper/server, release filename, quality, resolution, file size, language, audio, codec, source, HDR, subtitles, and display badges are returned in every normalized stream.
 - Live health and server logs.
 - Custom DNS resolver selection: System, Cloudflare, Google, Quad9, AdGuard, or custom IPv4/IPv6 DNS servers.
 - Supports numeric TMDB IDs and IMDb IDs (`tt...`) with TMDB ID resolution.
@@ -49,6 +49,13 @@ Use only sources and content you are authorized to access.
 
 
 
+## v4.0.23 provider metadata fetch/display fixes
+- Every provider result is normalized into a common metadata shape.
+- Provider name and scraper/server label are returned separately.
+- Release filename, quality/resolution, file size, source, language, audio, codec, HDR, subtitles, bitrate, and display badges are preserved when present or detected from the scraped release text.
+- `description` is formatted as a mobile-friendly multi-line block so clients can show provider/server, size, release filename, and source details similar to the reference UI.
+- Existing provider-specific fields and playback headers remain intact.
+
 ## v4.0.8 provider fetch fixes
 - Vercel region is set to Mumbai (`bom1`) to reduce latency and improve compatibility with India-focused upstream providers.
 - Provider execution uses `Promise.allSettled()` so one rejected provider cannot abort the complete provider fetch.
@@ -58,4 +65,4 @@ Use only sources and content you are authorized to access.
 ### Deployment behavior
 
 - Provider/application timeout limits are disabled; scrapers are allowed to run until the hosting platform or upstream request itself ends.
-- Vercel function `maxDuration` is configured to 20 seconds.
+- No Vercel `maxDuration` limit is configured by this repository.

@@ -1,6 +1,6 @@
 {
   "id": "com.knox.express",
-  "version": "4.0.22",
+  "version": "4.0.25",
   "name": "Knox Express",
   "description": "Express-based multi-provider stream addon with a TV-friendly provider manager.",
   "logo": "/logo.svg",
@@ -19,5 +19,11 @@
     "configurable": true,
     "configurationRequired": false
   },
-  "icon": "/logo.svg"
+  "icon": "/logo.svg",
+  "providerFetchSettings": {
+    "4khdhub": {
+      "timeoutMs": 45000,
+      "purpose": "Allow slower 4KHDHub resolution/final-link fetching without changing other providers."
+    }
+  }
 }

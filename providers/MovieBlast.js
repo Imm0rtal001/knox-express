@@ -80,6 +80,8 @@ function toStream(loadUrl) {
         title: `MovieBlast • ${quality}`,
         url: signed,
         quality,
+        server: loadUrl.server || "",
+        language: loadUrl.lang || "",
         headers: {
             "Connection": "Keep-Alive",
             "Icy-MetaData": "1",
