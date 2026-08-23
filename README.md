@@ -66,3 +66,9 @@ Use only sources and content you are authorized to access.
 
 - Provider/application timeout limits are disabled; scrapers are allowed to run until the hosting platform or upstream request itself ends.
 - No Vercel `maxDuration` limit is configured by this repository.
+
+## Fire TV / Nuvio compatibility fixes (v4.0.26)
+- Correctly parses TMDB/IMDb movie and series IDs used by Nuvio TV.
+- Adds CORS and OPTIONS support for Fire TV/WebView clients.
+- Adds HEAD compatibility for manifest and stream endpoints.
+- Pins Vercel runtime to Node.js 20 for stable deployment.

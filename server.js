@@ -15,7 +15,7 @@ const streamCache = new Map();
 const STATE_KEY = "knox:provider-state";
 const SETTINGS_KEY = "knox:settings";
 const MANIFEST_KEY = "knox:manifest-revision";
-let manifestRevision = 1;
+let manifestRevision = 2;
 let scraperRefreshRevision = 0;
 const PERSIST_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
 const PERSIST_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
@@ -49,6 +49,18 @@ function applyDnsServers(servers) {
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "256kb" }));
+
+// Nuvio TV / Fire TV WebView and native clients.
+app.use((req, res, next) => {
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, Origin, User-Agent",
+    "Access-Control-Expose-Headers": "Content-Type, X-Knox-Cache, X-Knox-Manifest-Revision"
+  });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  next();
+});
 
 // Control-center/API/manifest responses must never be served from a stale browser,
 // CDN, or Vercel cache after provider settings change.
@@ -193,33 +205,60 @@ function loadProvider(id) {
   }
 }
 
+function normalizeExternalId(rawId) {
+  const id = decodeURIComponent(String(rawId || "").trim());
+
+  // Nuvio/Stremio may send: 123, tmdb:123, tmdb:movie:123, tmdb:tv:123.
+  const tmdb = id.match(/^tmdb:(?:(?:movie|tv|series):)?(\d+)$/i);
+  if (tmdb) return { kind: "tmdb", id: tmdb[1] };
+
+  const imdb = id.match(/^(?:imdb:)?(tt\d+)$/i);
+  if (imdb) return { kind: "imdb", id: imdb[1] };
+
+  if (/^\d+$/.test(id)) return { kind: "tmdb", id };
+
+  return { kind: "raw", id: id.split(":")[0] };
+}
+
 async function resolveTmdbId(id) {
-  if (/^\d+$/.test(id)) return id;
-  if (id.startsWith("tmdb:")) return id.slice(5).split(":")[0];
-  if (id.startsWith("tt")) {
-    // Uses an already-present provider key when available; users can override it.
+  const normalized = normalizeExternalId(id);
+  if (normalized.kind === "tmdb") return normalized.id;
+
+  if (normalized.kind === "imdb") {
     const key = process.env.TMDB_API_KEY || "307b7b8ef035c6aa336900aef4e203bd";
-    const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(id)}?api_key=${encodeURIComponent(key)}&external_source=imdb_id`;
-    const r = await fetch(url, { headers: { "User-Agent": "Knox-Express/4.0" } });
+    const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(normalized.id)}?api_key=${encodeURIComponent(key)}&external_source=imdb_id`;
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Knox-Express/4.0",
+        "Accept": "application/json"
+      }
+    });
     if (!r.ok) throw new Error(`TMDB lookup failed: ${r.status}`);
     const data = await r.json();
     const found = data.movie_results?.[0]?.id || data.tv_results?.[0]?.id;
     if (!found) throw new Error("No TMDB match for IMDb id");
     return String(found);
   }
-  return id.split(":")[0];
+
+  return normalized.id;
 }
 
 function parseStreamId(type, rawId) {
-  const parts = String(rawId).split(":");
+  const raw = decodeURIComponent(String(rawId || "").trim());
+  const parts = raw.split(":");
+
+  // Series IDs may be 123:1:2, tmdb:123:1:2, tmdb:tv:123:1:2, or tt...:1:2.
   if (type === "series") {
-    return {
-      id: parts[0],
-      season: parts[1] ? Number(parts[1]) : null,
-      episode: parts[2] ? Number(parts[2]) : null
-    };
+    let season = null;
+    let episode = null;
+    if (parts.length >= 3 && /^\d+$/.test(parts.at(-1)) && /^\d+$/.test(parts.at(-2))) {
+      episode = Number(parts.pop());
+      season = Number(parts.pop());
+    }
+    return { id: parts.join(":"), season, episode };
   }
-  return { id: parts[0], season: null, episode: null };
+
+  return { id: raw, season: null, episode: null };
 }
 
 function firstValue(obj, keys) {
@@ -228,6 +267,38 @@ function firstValue(obj, keys) {
     if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim();
   }
   return "";
+}
+
+// Stremio/Nuvio requires stream.subtitles to be an ARRAY of subtitle objects.
+// Provider metadata may use a string such as "English" or "Embedded" for
+// display purposes, so never pass that display string through as the protocol
+// field. Preserve valid subtitle tracks and convert a bare subtitle URL when
+// possible.
+function normalizeSubtitlesForStream(stream) {
+  const candidates = [stream?.subtitles, stream?.subtitle, stream?.subs, stream?.sub];
+  for (const value of candidates) {
+    if (Array.isArray(value)) {
+      const tracks = value.map((item, index) => {
+        if (!item || typeof item !== "object") return null;
+        const url = String(item.url || item.uri || item.src || "").trim();
+        if (!url) return null;
+        return {
+          id: String(item.id || `${index + 1}`),
+          url,
+          lang: String(item.lang || item.language || "en").trim(),
+          ...(item.label ? { label: String(item.label) } : {}),
+          ...(item.name ? { name: String(item.name) } : {})
+        };
+      }).filter(Boolean);
+      if (tracks.length) return tracks;
+    } else if (typeof value === "string") {
+      const text = value.trim();
+      if (/^https?:\/\//i.test(text)) {
+        return [{ id: "1", url: text, lang: "en" }];
+      }
+    }
+  }
+  return [];
 }
 
 function normalizeFileSize(value) {
@@ -599,6 +670,7 @@ function cleanStream(s, providerName, providerId) {
     s.filename || s.fileName || s.releaseFilename || s.releaseFileName || s.releaseTitle || s.title || s.name || s.description || providerName
   ).replace(/\s+/g, " ").trim();
   const meta = detectMediaMeta(s);
+  const normalizedSubtitles = normalizeSubtitlesForStream(s);
   const releaseFilename = extractReleaseFilename(s, rawTitle);
   const providerSource = detectProviderSource(s, providerName);
   const display = buildStreamDisplay(s, providerName, meta, rawTitle, releaseFilename, providerSource);
@@ -654,7 +726,8 @@ function cleanStream(s, providerName, providerId) {
     source: meta.source || undefined,
     bitDepth: meta.bitDepth || undefined,
     channels: meta.channels || undefined,
-    subtitles: meta.subtitles || undefined,
+    // Protocol field: always an array, never the display string from mediaInfo.
+    subtitles: normalizedSubtitles.length ? normalizedSubtitles : undefined,
     multiAudio: meta.multiAudio || undefined,
     bitrate: meta.bitrate || undefined,
     badges: display.badges,
@@ -752,26 +825,29 @@ async function runProvider(id, type, tmdbId, season, episode) {
 }
 
 // Standard Stremio/Nuvio-style addon manifest.
-app.get("/manifest.json", (_req, res) => {
+app.get("/manifest.json", (req, res) => {
   res.set("X-Knox-Manifest-Revision", String(manifestRevision));
-  res.json(addonManifest());
+  res.set("Content-Type", "application/json; charset=utf-8");
+  res.json(addonManifest(req));
 });
 
-function addonManifest() {
+function addonManifest(req) {
   const state = readProviders();
   const all = Object.values(state);
   const enabledProviderIds = all.filter(p => p.enabled === true).map(p => p.id);
   const manifest = {
     id: "com.knox.express",
-    version: "4.0.22",
+    version: "4.0.28",
     name: "Knox Express",
     description: "Knox Express multi-provider streaming addon with provider controls.",
-    logo: "/logo.svg",
-    icon: "/logo.svg",
-    resources: ["stream"],
+    // Use an absolute HTTPS asset URL for Fire TV/Nuvio clients.
+    logo: `https://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
+    icon: `https://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
+    // Resource-level declaration is more compatible with Nuvio/Stremio and
+    // deliberately omits idPrefixes so numeric TMDB IDs are not filtered out.
+    resources: [{ name: "stream", types: ["movie", "series"] }],
     types: ["movie", "series"],
-    idPrefixes: ["tt", "tmdb"],
-    behaviorHints: { configurable: true, configurationRequired: false },
+    behaviorHints: { configurable: false, configurationRequired: false },
     // Non-standard metadata is ignored by Stremio/Nuvio but lets the control
     // center and compatible clients detect a changed provider configuration.
     knox: {
@@ -1058,6 +1134,8 @@ async function handleStream(req, res) {
 
 app.get("/stream/:type/:id.json", handleStream);
 app.get("/stream/:type/:id", handleStream);
+app.head("/stream/:type/:id.json", (_req, res) => res.status(200).end());
+app.head("/manifest.json", (_req, res) => res.status(200).end());
 
 // UI-friendly aliases.
 app.get("/api/stream/:type/:id", handleStream);

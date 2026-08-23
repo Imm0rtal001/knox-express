@@ -1,11 +1,11 @@
 {
   "name": "knox-express-addon",
-  "version": "4.0.25",
+  "version": "4.0.28",
   "private": true,
-  "description": "Express/Nuvio-compatible addon wrapper for the supplied Knox providers.",
+  "description": "Express/Nuvio-compatible addon wrapper with Fire TV and Nuvio TV compatibility fixes.",
   "main": "server.js",
   "engines": {
-    "node": "24.x"
+    "node": "22.x"
   },
   "scripts": {
     "start": "node server.js",

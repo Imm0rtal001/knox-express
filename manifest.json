@@ -1,25 +1,27 @@
 {
   "id": "com.knox.express",
-  "version": "4.0.25",
+  "version": "4.0.28",
   "name": "Knox Express",
   "description": "Express-based multi-provider stream addon with a TV-friendly provider manager.",
-  "logo": "/logo.svg",
+  "logo": "https://knox-express-firetv.vercel.app/logo.svg",
   "resources": [
-    "stream"
+    {
+      "name": "stream",
+      "types": [
+        "movie",
+        "series"
+      ]
+    }
   ],
   "types": [
     "movie",
     "series"
   ],
-  "idPrefixes": [
-    "tt",
-    "tmdb"
-  ],
   "behaviorHints": {
-    "configurable": true,
+    "configurable": false,
     "configurationRequired": false
   },
-  "icon": "/logo.svg",
+  "icon": "https://knox-express-firetv.vercel.app/logo.svg",
   "providerFetchSettings": {
     "4khdhub": {
       "timeoutMs": 45000,
