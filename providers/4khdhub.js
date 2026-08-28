@@ -1,593 +1,393 @@
-use std::{
-    sync::{Arc, OnceLock},
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-
-use regex::Regex;
-use serde_json::{json, Value};
-use tokio::sync::Mutex;
-
-use super::{NativeProvider, StreamsFuture};
-
-const PROVIDER_NAME: &str = "4kHdHub";
-const DOMAINS_JSON_URL: &str =
-    "https://raw.githubusercontent.com/Imm0rtal001/knox/refs/heads/main/manifest.json";
-const DEFAULT_BASE_URL: &str = "https://4khdhub.one";
-const UA: &str = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 \
-                  (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36";
-const DOMAIN_CACHE_TTL: Duration = Duration::from_secs(4 * 60 * 60);
-
-fn re_quality() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)(2160|1080|720|480)p|(4K|UHD)").unwrap())
+const PROVIDER_NAME = "4kHdHub";
+const TMDB_API_KEY = "307b7b8ef035c6aa336900aef4e203bd";
+const TMDB_API_URL = "https://api.themoviedb.org/3";
+const MOBILE_UAS = [
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+];
+let baseUrl = "https://4khdhub.one";
+let sessionUA = MOBILE_UAS[Math.floor(Math.random() * MOBILE_UAS.length)];
+const RE_QUALITY = /(2160|1080|720|480)p|(4K|UHD)/i;
+const RE_YEAR = /\b(19\d{2}|20\d{2})\b/;
+const RE_SIZE_CTX = /(?:^|[\s>])(\d+\.?\d*)\s*(GB|MB)\b/i;
+const RE_HUBCLOUD = /https?:\/\/hubcloud\.[a-z0-9]+\/drive\/[a-z0-9]+/ig;
+const RE_SXEX = /S0*(\d+)[.\s_\-]*E0*(\d+)/i;
+const RE_EP = /Episode\s*0*(\d+)/i;
+const RE_HEADER = /<div[^>]*class=['"][^'"]*card-header[^'"]*['"][^>]*>([^<]+)</i;
+const RE_SIZE_TD = /<td[^>]*>\s*File\s*Size\s*:\s*<\/td>\s*<td[^>]*>\s*([\d\.]+\s*[MGBtbi]+)\s*<\/td>/i;
+const RE_SIZE_STR = /Size\s*:\s*<\/strong>\s*([\d\.]+\s*[MGBtbi]+)/i;
+const RE_SLUG_JUNK = /^(movie|series)$|^\d+$/;
+const RE_NONALNUM = /[^a-z0-9]/g;
+const RE_EXT = /\.(mkv|mp4|avi|rar|zip)$/i;
+const RE_ZIP_RAR = /\.zip|\.rar/;
+const RE_PIXEL = /pixel\.hubcloud/;
+const AUDIO_TABLE = [
+    [/ddp.?51.*truehd.*71|truehd.*71.*ddp.?51/i, "DDP 5.1 + TrueHD 7.1"],
+    [/ddp.?51.*ddp.?71|ddp.?71.*ddp.?51/i, "DDP 5.1 + DDP 7.1"],
+    [/ddp.?51.*aac.?71|aac.?71.*ddp.?51/i, "DDP 5.1 + AAC 7.1"],
+    [/ddp.?51/i, "DDP 5.1"],
+    [/truehd/i, "TrueHD 7.1"],
+    [/aac.*71|71.*aac/i, "AAC 7.1"],
+    [/aac/i, "AAC 5.1"],
+];
+function getHeaders(extra) {
+    return Object.assign({
+        "User-Agent": sessionUA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }, extra || {});
 }
-fn re_hubcloud() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| {
-        Regex::new(r"(?i)https?://hubcloud\.[a-z0-9]+/drive/[a-z0-9]+").unwrap()
-    })
-}
-fn re_sxex() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)S0*(\d+)[.\s_\-]*E0*(\d+)").unwrap())
-}
-fn re_ep() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)Episode\s*0*(\d+)").unwrap())
-}
-fn re_year() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"\b(19\d{2}|20\d{2})\b").unwrap())
-}
-fn re_size_ctx() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)(?:^|[\s>])(\d+\.?\d*)\s*(GB|MB)\b").unwrap())
-}
-fn re_card_header() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| {
-        Regex::new(r#"(?i)<div[^>]*class=['"][^'"]*card-header[^'"]*['"][^>]*>([^<]+)<"#).unwrap()
-    })
-}
-fn re_size_td() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| {
-        Regex::new(
-            r"(?i)<td[^>]*>\s*File\s*Size\s*:\s*</td>\s*<td[^>]*>\s*([\d\.]+\s*[MGBtbi]+)\s*</td>",
-        )
-        .unwrap()
-    })
-}
-fn re_size_str() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)Size\s*:\s*</strong>\s*([\d\.]+\s*[MGBtbi]+)").unwrap())
-}
-fn re_slug_junk() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)^(movie|series)$|^\d+$").unwrap())
-}
-fn re_nonalnum() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"[^a-z0-9]").unwrap())
-}
-fn re_ext() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?i)\.(mkv|mp4|avi|rar|zip)$").unwrap())
-}
-fn re_link() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r#"href="(https?://[^"/]+)?(/[^"]+)""#).unwrap())
-}
-fn re_php_url() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r#"(?i)href="([^"]*hubcloud\.php[^"]*)""#).unwrap())
-}
-fn re_a_link() -> &'static Regex {
-    static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| {
-        Regex::new(r#"(?i)<a[^>]+href="([^"]+)"[^>]*>(?:<i[^>]*></i>)?\s*([^<]+)</a>"#).unwrap()
-    })
-}
-
-struct DomainState {
-    base_url: String,
-    updated_at: Option<Instant>,
-}
-
-struct TmdbInfo {
-    title: String,
-    year: String,
-    imdb_id: String,
-    is_tv: bool,
-}
-
-struct SearchResult {
-    url: String,
-    content: Option<String>,
-}
-
-struct HubcloudLink {
-    url: String,
-    quality: String,
-    size: String,
-}
-
-pub struct HexionProvider {
-    client: crate::scraper_client::ScraperClient,
-    tmdb_api_key: String,
-    domain_state: Arc<Mutex<DomainState>>,
-}
-
-impl HexionProvider {
-    pub fn new(client: crate::scraper_client::ScraperClient, tmdb_api_key: String) -> Self {
-        HexionProvider {
-            client,
-            tmdb_api_key,
-            domain_state: Arc::new(Mutex::new(DomainState {
-                base_url: DEFAULT_BASE_URL.to_string(),
-                updated_at: None,
-            })),
+function fetchText(url, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const res = yield fetch(url, Object.assign({ headers: getHeaders() }, options));
+            return (res && res.ok) ? res.text() : null;
         }
-    }
-
-    fn headers(&self) -> reqwest::header::HeaderMap {
-        let mut h = reqwest::header::HeaderMap::new();
-        h.insert("User-Agent", UA.parse().unwrap());
-        h.insert(
-            "Accept",
-            "text/html,application/xhtml+xml,*/*;q=0.8".parse().unwrap(),
-        );
-        h
-    }
-
-    async fn fetch_text(&self, url: &str, referer: Option<&str>) -> Option<String> {
-        let mut req = self.client.get(url).headers(self.headers());
-        if let Some(r) = referer {
-            req = req.header("Referer", r);
+        catch (_) {
+            return null;
         }
-        let resp = req.send().await.ok()?;
-        if resp.status().is_success() {
-            resp.text().await.ok()
-        } else {
-            None
+    });
+}
+function fetchJson(url, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const res = yield fetch(url, Object.assign({ headers: getHeaders() }, options));
+            return (res && res.ok) ? res.json() : null;
         }
-    }
-
-    async fn fetch_json(&self, url: &str) -> Option<Value> {
-        let resp = self
-            .client
-            .get(url)
-            .headers(self.headers())
-            .send()
-            .await
-            .ok()?;
-        if resp.status().is_success() {
-            resp.json().await.ok()
-        } else {
-            None
+        catch (_) {
+            return null;
         }
-    }
-
-    async fn get_base_url(&self) -> String {
-        let mut state = self.domain_state.lock().await;
-        let stale = state
-            .updated_at
-            .map(|t| t.elapsed() >= DOMAIN_CACHE_TTL)
-            .unwrap_or(true);
-
-        if stale {
-            if let Some(data) = self.fetch_json(DOMAINS_JSON_URL).await {
-                if let Some(url) = data["4khdhub"].as_str() {
-                    state.base_url = url.to_string();
-                    state.updated_at = Some(Instant::now());
+    });
+}
+function parseSizeMB(sizeStr) {
+    if (!sizeStr)
+        return null;
+    const m = /(\d+\.?\d*)\s*(GB|MB)/i.exec(sizeStr);
+    if (!m)
+        return null;
+    const val = parseFloat(m[1]);
+    return m[2].toUpperCase() === "GB" ? val * 1024 : val;
+}
+function calcMbps(sizeMB, runtimeMinutes) {
+    if (!sizeMB || !runtimeMinutes)
+        return null;
+    const bits = sizeMB * 1024 * 1024 * 8;
+    const seconds = runtimeMinutes * 60;
+    const mbps = bits / seconds / 1000000;
+    return mbps.toFixed(1) + " Mbps";
+}
+function getTMDBInfo(tmdbId, type) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const isTV = type === "tv";
+        let title = "", year = "", imdbId = "", runtime = null;
+        try {
+            if (isTV) {
+                const d = yield fetchJson(`${TMDB_API_URL}/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`);
+                if (d) {
+                    title = d.name;
+                    year = (d.first_air_date || "").slice(0, 4);
+                    imdbId = (d.external_ids && d.external_ids.imdb_id) || "";
+                    runtime = (d.episode_run_time && d.episode_run_time[0]) || null;
+                }
+            }
+            else {
+                const d = yield fetchJson(`${TMDB_API_URL}/movie/${tmdbId}?api_key=${TMDB_API_KEY}`);
+                if (d) {
+                    title = d.title;
+                    year = (d.release_date || "").slice(0, 4);
+                    imdbId = d.imdb_id || "";
+                    runtime = d.runtime != null ? d.runtime : null;
                 }
             }
         }
-        state.base_url.clone()
-    }
-
-    async fn get_tmdb_info(&self, tmdb_id: &str, media_type: &str) -> Option<TmdbInfo> {
-        let is_tv = media_type == "tv" || media_type == "series";
-        let url = if is_tv {
-            format!(
-                "https://api.themoviedb.org/3/tv/{tmdb_id}?api_key={}&append_to_response=external_ids",
-                self.tmdb_api_key
-            )
-        } else {
-            format!(
-                "https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={}",
-                self.tmdb_api_key
-            )
-        };
-        let data = self.fetch_json(&url).await?;
-
-        let title = if is_tv {
-            data["name"].as_str()?.to_string()
-        } else {
-            data["title"].as_str()?.to_string()
-        };
-        let year = if is_tv {
-            data["first_air_date"]
-                .as_str()
-                .and_then(|d| d.get(..4))
-                .unwrap_or("")
-                .to_string()
-        } else {
-            data["release_date"]
-                .as_str()
-                .and_then(|d| d.get(..4))
-                .unwrap_or("")
-                .to_string()
-        };
-        let imdb_id = if is_tv {
-            data["external_ids"]["imdb_id"]
-                .as_str()
-                .unwrap_or("")
-                .to_string()
-        } else {
-            data["imdb_id"].as_str().unwrap_or("").to_string()
-        };
-
-        Some(TmdbInfo {
-            title,
-            year,
-            imdb_id,
-            is_tv,
-        })
-    }
-
-    async fn search_site(&self, info: &TmdbInfo, base_url: &str) -> Option<SearchResult> {
-        if !info.imdb_id.is_empty() {
-            let posts_url = format!(
-                "{base_url}/wp-json/wp/v2/posts?search={}",
-                info.imdb_id
-            );
-            if let Some(posts) = self.fetch_json(&posts_url).await {
-                if let Some(arr) = posts.as_array() {
-                    if !arr.is_empty() {
-                        let link = arr[0]["link"].as_str()?.to_string();
-                        let content = if !info.is_tv {
-                            arr[0]["content"]["rendered"]
-                                .as_str()
-                                .map(|s| s.to_string())
-                        } else {
-                            None
-                        };
-                        return Some(SearchResult { url: link, content });
-                    }
+        catch (_) { }
+        return { title, year, imdbId, runtime };
+    });
+}
+function searchSite(title, year, imdbId, isSeries) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (imdbId) {
+            try {
+                const posts = yield fetchJson(`${baseUrl}/wp-json/wp/v2/posts?search=${imdbId}`);
+                if (posts && posts.length > 0) {
+                    return {
+                        url: posts[0].link,
+                        title: (posts[0].title && posts[0].title.rendered) || title,
+                        content: isSeries ? null : ((posts[0].content && posts[0].content.rendered) || ""),
+                    };
                 }
             }
+            catch (_) { }
         }
-
-        let encoded = urlencoding::encode(&info.title);
-        let html = self
-            .fetch_text(&format!("{base_url}/?s={encoded}"), None)
-            .await?;
-
-        let body = html
-            .split("id=\"main\"")
-            .nth(1)
-            .unwrap_or(&html)
-            .to_string();
-
-        let clean_q: String = re_nonalnum()
-            .replace_all(&info.title.to_lowercase(), "")
-            .to_string();
-        let type_str = if info.is_tv { "-series-" } else { "-movie-" };
-        let anti_str = if info.is_tv { "-movie-" } else { "-series-" };
-
-        let mut best: Option<SearchResult> = None;
-
-        for cap in re_link().captures_iter(&body) {
-            let domain = cap.get(1).map(|m| m.as_str()).unwrap_or("");
-            let path = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-
-            if !domain.is_empty() && !domain.contains("4khdhub") {
+        const html = yield fetchText(`${baseUrl}/?s=${encodeURIComponent(title)}`);
+        if (!html)
+            return null;
+        const body = html.split('id="main"')[1] || html;
+        const cleanQ = title.toLowerCase().replace(RE_NONALNUM, "");
+        const typeStr = isSeries ? "-series-" : "-movie-";
+        const antiStr = isSeries ? "-movie-" : "-series-";
+        const linkRe = /href="(https?:\/\/[^"\/]+)?(\/[^"]+)"/g;
+        let best = null, m;
+        while ((m = linkRe.exec(body)) !== null) {
+            const domain = m[1] || "";
+            const path = m[2];
+            if (domain && !domain.includes("4khdhub"))
                 continue;
-            }
-            if path.contains("/category/") || path.contains('?') || path.contains(anti_str) {
+            if (path.includes("/category/") || path.includes("?") || path.includes(antiStr))
                 continue;
-            }
-            if !path.contains(type_str) {
+            if (!path.includes(typeStr))
                 continue;
-            }
-
-            let slug: String = path
-                .split('/')
-                .filter(|s| !s.is_empty())
-                .last()
-                .unwrap_or("")
-                .split('-')
-                .filter(|w| !re_slug_junk().is_match(w))
-                .collect::<Vec<_>>()
-                .join("");
-            let slug = re_nonalnum()
-                .replace_all(&slug.to_lowercase(), "")
-                .to_string();
-
-            if !slug.contains(&clean_q) && !clean_q.contains(&slug) {
+            const slugWords = path.split("/").filter(Boolean).pop().split("-");
+            const slugClean = slugWords.filter(w => !RE_SLUG_JUNK.test(w)).join("").toLowerCase().replace(RE_NONALNUM, "");
+            if (!slugClean.includes(cleanQ) && !cleanQ.includes(slugClean))
                 continue;
-            }
-
-            let m_start = cap.get(0).map(|m| m.start()).unwrap_or(0);
-            let ctx = &body[m_start..body.len().min(m_start + 300)];
-            let year_hit = !info.year.is_empty()
-                && re_year()
-                    .captures(ctx)
-                    .and_then(|c| c.get(1))
-                    .map(|m| m.as_str())
-                    == Some(info.year.as_str());
-
-            if best.is_none() || year_hit {
-                best = Some(SearchResult {
-                    url: format!("{base_url}{path}"),
-                    content: None,
-                });
-                if year_hit {
+            const ctx = body.substring(m.index, m.index + 300);
+            const yearMatch = RE_YEAR.exec(ctx);
+            const yearHit = year && yearMatch && yearMatch[1] === year;
+            if (!best || yearHit) {
+                best = { url: baseUrl + path, title };
+                if (yearHit)
                     break;
-                }
             }
         }
-
-        best
+        return best;
+    });
+}
+function extractHubcloudLinks(html, season, episode, isSeries) {
+    const results = [];
+    let scope = html;
+    if (isSeries) {
+        let start = html.indexOf('id="episodes"');
+        if (start < 0)
+            start = html.indexOf('data-tab="episodes"');
+        if (start >= 0) {
+            scope = html.substring(start);
+            const end = scope.indexOf('id="complete-pack"');
+            if (end >= 0)
+                scope = scope.substring(0, end);
+        }
     }
-
-    fn extract_hubcloud_links(
-        &self,
-        html: &str,
-        season: i32,
-        episode: i32,
-        is_series: bool,
-    ) -> Vec<HubcloudLink> {
-        let scope: &str = if is_series {
-            let start = html
-                .find("id=\"episodes\"")
-                .or_else(|| html.find("data-tab=\"episodes\""))
-                .unwrap_or(0);
-            let s = &html[start..];
-            let end = s.find("id=\"complete-pack\"").unwrap_or(s.len());
-            let abs_start = start;
-            let abs_end = start + end;
-            &html[abs_start..abs_end]
-        } else {
-            html
-        };
-
-        let mut results = Vec::new();
-
-        for m in re_hubcloud().find_iter(scope) {
-            let url = m.as_str().to_string();
-            let before_start = m.start().saturating_sub(1500);
-            let ctx_before = &scope[before_start..m.start()];
-
-            if is_series {
-                let ctx_after_end = scope.len().min(m.end() + 500);
-                let ctx = format!("{}{}", ctx_before, &scope[m.start()..ctx_after_end]);
-
-                if let Some(cap) = re_sxex().captures(&ctx) {
-                    let s: i32 = cap[1].parse().unwrap_or(0);
-                    let e: i32 = cap[2].parse().unwrap_or(0);
-                    if s != season || e != episode {
-                        continue;
-                    }
-                } else if let Some(cap) = re_ep().captures(&ctx) {
-                    let e: i32 = cap[1].parse().unwrap_or(0);
-                    if e != episode {
-                        continue;
-                    }
-                } else {
+    RE_HUBCLOUD.lastIndex = 0;
+    let m;
+    while ((m = RE_HUBCLOUD.exec(scope)) !== null) {
+        const url = m[0];
+        if (isSeries) {
+            const ctxBefore = scope.substring(Math.max(0, m.index - 3000), m.index);
+            const ctxAfter = scope.substring(m.index, Math.min(scope.length, m.index + 500));
+            const ctx = ctxBefore + ctxAfter;
+            const epMatch = RE_SXEX.exec(ctx) || RE_EP.exec(ctx);
+            if (!epMatch)
+                continue;
+            let s = season, e;
+            if (epMatch[2]) {
+                s = +epMatch[1];
+                e = +epMatch[2];
+            }
+            else {
+                e = +epMatch[1];
+            }
+            if (s !== season || e !== episode)
+                continue;
+            const qm = RE_QUALITY.exec(ctxBefore);
+            let quality = "HD";
+            if (qm) {
+                const v = qm[1] || qm[2];
+                quality = (v.toUpperCase() === "4K" || v.toUpperCase() === "UHD") ? "2160P" : v.toUpperCase() + "P";
+            }
+            if (quality === "480P")
+                continue;
+            const sm = RE_SIZE_CTX.exec(ctxBefore);
+            results.push({ url, quality, size: sm ? sm[1] + " " + sm[2] : "" });
+        }
+        else {
+            const context = scope.substring(Math.max(0, m.index - 1500), m.index);
+            const qm = RE_QUALITY.exec(context);
+            let quality = "HD";
+            if (qm) {
+                const v = qm[1] || qm[2];
+                quality = (v.toUpperCase() === "4K" || v.toUpperCase() === "UHD") ? "2160P" : v.toUpperCase() + "P";
+            }
+            if (quality === "480P")
+                continue;
+            const sm = RE_SIZE_CTX.exec(context);
+            results.push({ url, quality, size: sm ? sm[1] + " " + sm[2] : "" });
+        }
+    }
+    return results;
+}
+function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer, size, runtime) {
+    const qualityUp = (quality || "1080P").toUpperCase();
+    const encodedUrl = streamUrl.replace(/ /g, "%20");
+    const combined = (String(filename || "") + " " + String(sourceName || "") + " " + encodedUrl).toLowerCase();
+    const langParts = [];
+    if (/\b(?:english|eng)\b/.test(combined))
+        langParts.push("English");
+    if (/\bhindi\b/.test(combined))
+        langParts.push("Hindi");
+    if (/\btamil\b/.test(combined))
+        langParts.push("Tamil");
+    if (/\btelugu\b/.test(combined))
+        langParts.push("Telugu");
+    let source = "WEB-DL";
+    if (/\bbluray\b/.test(combined))
+        source = "Blu-ray";
+    else if (/\b(?:webrip|hdrip)\b/.test(combined))
+        source = "WEB-Rip";
+    let hdrTag = "";
+    if (/\bhdr10\+|hdr10p\b/.test(combined))
+        hdrTag = "HDR10+";
+    else if (/\bhdr10\b/.test(combined))
+        hdrTag = "HDR10";
+    else if (/\bhdr\b/.test(combined))
+        hdrTag = "HDR";
+    else if (/\bsdr\b/.test(combined))
+        hdrTag = "SDR";
+    const bit10Tag = /\b10bit\b/.test(combined) ? "10Bit" : "";
+    const dvTag = /\b(?:dv|dolby\s*vision)\b/.test(combined) ? "DV" : "";
+    const codec = (/\b(?:hevc|x265|265)\b/.test(combined) || qualityUp === "2160P") ? "H.265" : "H.264";
+    const isImax = /\bimax\b/.test(combined);
+    let audio = "DDP 5.1";
+    for (let i = 0; i < AUDIO_TABLE.length; i++) {
+        if (AUDIO_TABLE[i][0].test(combined)) {
+            audio = AUDIO_TABLE[i][1];
+            break;
+        }
+    }
+    if (/\batmos\b/.test(combined))
+        audio += " Atmos";
+    const sizeMB = parseSizeMB(size);
+    const mbps = calcMbps(sizeMB, runtime);
+    const mainTitle = [PROVIDER_NAME, qualityUp, size].filter(Boolean).join(" • ");
+    const line1 = langParts.join(" • ");
+    const line2 = [source, isImax && "IMAX", hostLabel || "FSL", mbps].filter(Boolean).join(" • ");
+    const line3 = [bit10Tag, dvTag, hdrTag, codec, audio].filter(Boolean).join(" • ");
+    const streamTitle = [line1, line2, line3].filter(Boolean).join("\n");
+    return {
+        name: mainTitle,
+        title: mainTitle,
+        size: streamTitle,
+        url: encodedUrl,
+        quality: qualityUp,
+        headers: { Referer: referer || "https://4khdhub.one/" },
+    };
+}
+function resolveHubCloud(link, fallbackTitle, runtime) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { url, quality, size } = link;
+        const streams = [];
+        try {
+            const html = yield fetchText(url, { headers: getHeaders({ Referer: baseUrl + "/" }) });
+            if (!html)
+                return streams;
+            const phpMatch = html.match(/href="([^"]*hubcloud\.php[^"]*)"/i);
+            if (!phpMatch)
+                return streams;
+            const phpUrl = phpMatch[1].replace(/&amp;/g, "&");
+            const html2 = yield fetchText(phpUrl, { headers: getHeaders({ Referer: url }) });
+            if (!html2)
+                return streams;
+            const hm = RE_HEADER.exec(html2);
+            const filename = hm ? hm[1].trim().replace(RE_EXT, "") : fallbackTitle;
+            let fileSize = size || "";
+            const sm = RE_SIZE_TD.exec(html2) || RE_SIZE_STR.exec(html2);
+            if (sm)
+                fileSize = sm[1].trim();
+            const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>(?:<i[^>]*><\/i>)?\s*([^<]+)<\/a>/gi;
+            let m;
+            while ((m = linkRegex.exec(html2)) !== null) {
+                let streamUrl = m[1].replace(/&amp;/g, "&");
+                const label = m[2].trim();
+                if (!streamUrl || streamUrl.startsWith("javascript:"))
+                    continue;
+                if (RE_ZIP_RAR.test(streamUrl))
+                    continue;
+                if (RE_PIXEL.test(streamUrl))
+                    continue;
+                if (/telegram/i.test(label) || /tg\//i.test(streamUrl))
+                    continue;
+                if (/hubcloud\.cx\/drive\/admin/i.test(streamUrl))
+                    continue;
+                if (/pixeldrain|bzzhr/i.test(streamUrl))
+                    continue;
+                let host = "";
+                if (/cdn\.fsl-buckets\.life|r2\.cloudflarestorage|r2\.dev/i.test(streamUrl)) {
+                    host = "FSL-v2";
+                }
+                else if (/hub\.(latent|whistle)/i.test(streamUrl)) {
+                    host = "FSL";
+                    streamUrl = streamUrl + "1" + new Date().getMinutes();
+                }
+                else {
                     continue;
                 }
+                streams.push(makeStream(filename, host, streamUrl, quality, host, phpUrl, fileSize, runtime));
             }
-
-            let quality = re_quality()
-                .captures(ctx_before)
-                .map(|c| {
-                    let v = c.get(1).or_else(|| c.get(2)).map(|m| m.as_str()).unwrap_or("");
-                    let upper = v.to_uppercase();
-                    if upper.contains("4K") || upper == "UHD" {
-                        "2160P".to_string()
-                    } else {
-                        format!("{upper}P")
-                    }
-                })
-                .unwrap_or_else(|| "HD".to_string());
-
-            if quality == "480P" {
-                continue;
-            }
-
-            let size = re_size_ctx()
-                .captures(ctx_before)
-                .map(|c| format!("{} {}", &c[1], &c[2]))
-                .unwrap_or_default();
-
-            results.push(HubcloudLink { url, quality, size });
         }
-
-        results
-    }
-
-    async fn resolve_hubcloud(
-        &self,
-        link: &HubcloudLink,
-        base_url: &str,
-        fallback_title: &str,
-    ) -> Vec<Value> {
-        let mut streams = Vec::new();
-
-        let html = match self
-            .fetch_text(&link.url, Some(&format!("{base_url}/")))
-            .await
-        {
-            Some(h) => h,
-            None => return streams,
-        };
-
-        let php_url = match re_php_url()
-            .captures(&html)
-            .and_then(|c| c.get(1))
-            .map(|m| m.as_str().replace("&amp;", "&"))
-        {
-            Some(u) => u,
-            None => return streams,
-        };
-
-        let html2 = match self.fetch_text(&php_url, Some(&link.url)).await {
-            Some(h) => h,
-            None => return streams,
-        };
-
-        let filename = re_card_header()
-            .captures(&html2)
-            .and_then(|c| c.get(1))
-            .map(|m| re_ext().replace(m.as_str().trim(), "").to_string())
-            .unwrap_or_else(|| fallback_title.to_string());
-
-        let file_size = re_size_td()
-            .captures(&html2)
-            .or_else(|| re_size_str().captures(&html2))
-            .and_then(|c| c.get(1))
-            .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_else(|| link.size.clone());
-
-        let current_minute =
-            (SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() / 60) % 60;
-
-        for cap in re_a_link().captures_iter(&html2) {
-            let mut stream_url = cap[1].replace("&amp;", "&");
-            let label = cap[2].trim().to_string();
-
-            if stream_url.is_empty() || stream_url.starts_with("javascript:") {
-                continue;
-            }
-            if stream_url.ends_with(".zip") || stream_url.ends_with(".rar") {
-                continue;
-            }
-            if stream_url.contains("pixel.hubcloud") {
-                continue;
-            }
-            if label.to_lowercase().contains("telegram") || stream_url.contains("tg/") {
-                continue;
-            }
-            let su_lower = stream_url.to_lowercase();
-            if su_lower.contains("hubcloud.cx/drive/admin")
-                || su_lower.contains("pixeldrain")
-                || su_lower.contains("bzzhr")
-            {
-                continue;
-            }
-
-            let host = if su_lower.contains("cdn.fsl-buckets.life")
-                || su_lower.contains("r2.cloudflarestorage")
-                || su_lower.contains("r2.dev")
-            {
-                "FSL-v2"
-            } else if su_lower.contains("hub.latent") || su_lower.contains("hub.whistle") {
-                stream_url = format!("{stream_url}1{current_minute}");
-                "FSL"
-            } else {
-                continue;
-            };
-
-            let name_parts: Vec<&str> = [PROVIDER_NAME, link.quality.as_str(), file_size.as_str()]
-                .iter()
-                .filter(|s| !s.is_empty())
-                .copied()
-                .collect();
-            let title_parts: Vec<&str> = [filename.as_str(), host]
-                .iter()
-                .filter(|s| !s.is_empty())
-                .copied()
-                .collect();
-
-            streams.push(json!({
-                "name":    name_parts.join(" • "),
-                "title":   title_parts.join("\n"),
-                "url":     stream_url,
-                "quality": link.quality,
-                "behaviorHints": {
-                    "notWebReady": true,
-                    "proxyHeaders": {
-                        "request": { "Referer": php_url }
-                    }
-                }
-            }));
-        }
-
-        streams
-    }
+        catch (_) { }
+        return streams;
+    });
 }
-
-impl NativeProvider for HexionProvider {
-    fn provider_id(&self) -> &str {
-        "hexion"
-    }
-
-    fn get_streams<'a>(
-        &'a self,
-        tmdb_id: &'a str,
-        _imdb_id: &'a str,
-        media_type: &'a str,
-        season: Option<i32>,
-        episode: Option<i32>,
-    ) -> StreamsFuture<'a> {
-        Box::pin(async move {
-            let base_url = self.get_base_url().await;
-
-            let info = match self.get_tmdb_info(tmdb_id, media_type).await {
-                Some(i) => i,
-                None => return vec![],
-            };
-
-            let result = match self.search_site(&info, &base_url).await {
-                Some(r) => r,
-                None => return vec![],
-            };
-
-            let html = match result.content {
-                Some(c) => c,
-                None => match self.fetch_text(&result.url, None).await {
-                    Some(h) => h,
-                    None => return vec![],
-                },
-            };
-
-            let is_series = info.is_tv;
-            let s = season.unwrap_or(0);
-            let e = episode.unwrap_or(0);
-
-            let links = self.extract_hubcloud_links(&html, s, e, is_series);
-            if links.is_empty() {
-                return vec![];
-            }
-
-            let tasks: Vec<_> = links
-                .iter()
-                .map(|link| self.resolve_hubcloud(link, &base_url, &info.title))
-                .collect();
-            let batches = futures::future::join_all(tasks).await;
-            let mut streams: Vec<Value> = batches.into_iter().flatten().collect();
-
-            let q_order = |q: &str| match q {
-                "2160P" => 4i32,
-                "1080P" => 3,
-                "720P"  => 2,
-                _       => 1,
-            };
-            streams.sort_by(|a, b| {
-                let qa = a["quality"].as_str().unwrap_or("");
-                let qb = b["quality"].as_str().unwrap_or("");
-                let qd = q_order(qb).cmp(&q_order(qa));
-                if qd != std::cmp::Ordering::Equal {
-                    return qd;
-                }
-                let fsl_b = b["name"].as_str().unwrap_or("").contains("FSL-v2") as i32;
-                let fsl_a = a["name"].as_str().unwrap_or("").contains("FSL-v2") as i32;
-                fsl_b.cmp(&fsl_a)
+function resWeight(name) {
+    const n = (name || "").toLowerCase();
+    if (n.includes("2160p") || n.includes("4k"))
+        return 4;
+    if (n.includes("1080p"))
+        return 3;
+    if (n.includes("720p"))
+        return 2;
+    return 1;
+}
+function srcWeight(name) {
+    const n = (name || "").toLowerCase();
+    if (n.includes("fsl-v2"))
+        return 4;
+    if (n.includes("fsl"))
+        return 3;
+    return 1;
+}
+function getStreams(tmdbId, mediaType, season, episode) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!tmdbId)
+            return [];
+        if (mediaType !== "movie" && mediaType !== "tv")
+            return [];
+        if (mediaType === "tv" && (season == null || episode == null))
+            return [];
+        const isSeries = mediaType === "tv";
+        let streams = [];
+        try {
+            const info = yield getTMDBInfo(tmdbId, mediaType);
+            if (!info.title)
+                return streams;
+            const result = yield searchSite(info.title, info.year, info.imdbId, isSeries);
+            if (!result)
+                return streams;
+            const html = (!isSeries && result.content) || (yield fetchText(result.url));
+            if (!html)
+                return streams;
+            const links = extractHubcloudLinks(html, +season, +episode, isSeries);
+            const resolved = yield Promise.all(links.map(l => resolveHubCloud(l, info.title, info.runtime)));
+            streams = resolved.flat();
+            streams.sort((a, b) => {
+                const rd = resWeight(b.name) - resWeight(a.name);
+                return rd !== 0 ? rd : srcWeight(b.name) - srcWeight(a.name);
             });
-
-            streams
-        })
-    }
-                   }
+            const seen = new Set();
+            streams = streams.filter(s => s.url && !seen.has(s.url) && seen.add(s.url));
+        }
+        catch (_) { }
+        return streams;
+    });
+}
+module.exports = { getStreams };
