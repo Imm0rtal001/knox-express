@@ -3,8 +3,8 @@
     "id": "4khdhub",
     "name": "4KHDHub",
     "description": "4KHDHub direct links",
-    "version": "1.0.0",
-    "author": "Nuvio Team",
+    "version": "1.5.0",
+    "author": "Imm0rtal",
     "filename": "4khdhub.js",
     "supportedTypes": [
       "movie",
