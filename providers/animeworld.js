@@ -186,8 +186,8 @@ async function getStreams(tmdbId, mediaType = "tv", seasonNumber = 1, episodeNum
     if (!streamData) return [];
 
     return [{
-      name: "AnimeWorld • Zephyrix",
-      title: "AnimeWorld • Zephyrix",
+      name: "AnimeWorld.",
+      title: "AnimeWorld",
       url: streamData.url,
       quality: "1080p",
       headers: streamData.streamHeaders,
