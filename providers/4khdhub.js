@@ -1,12 +1,12 @@
 "use strict";
 
 const PROVIDER_NAME = "4kHdHub";
-const BASE_URL = "https://4khdhub.one";
 const TMDB_API_URL = "https://api.themoviedb.org/3";
 const TMDB_API_KEY = "307b7b8ef035c6aa336900aef4e203bd";
+const BASE_URL = "https://4khdhub.one";
 const MOBILE_UAS = [
-  "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36",
-  "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36",
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36",
+  "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36",
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
 ];
 
@@ -377,10 +377,10 @@ function makeStream(filename, sourceName, streamUrl, quality, hostLabel, referer
   const sizeMB = parseSizeMB(size);
   const mbps = calcMbps(sizeMB, runtime);
 
-  const mainTitle = [PROVIDER_NAME, qualityUp, size].filter(Boolean).join(" • ");
-  const line1 = langParts.join(" • ");
-  const line2 = [source, isRemux && "REMUX", isImax && "IMAX", hostLabel || "FSL", mbps].filter(Boolean).join(" • ");
-  const line3 = [bit10Tag, dvTag, hdrTag, codec, audio].filter(Boolean).join(" • ");
+  const mainTitle = [PROVIDER_NAME, qualityUp, size].filter(Boolean).join(" \u2022 ");
+  const line1 = langParts.join(" \u2022 ");
+  const line2 = [source, isRemux && "REMUX", isImax && "IMAX", hostLabel || "FSL", mbps].filter(Boolean).join(" \u2022 ");
+  const line3 = [bit10Tag, dvTag, hdrTag, codec, audio].filter(Boolean).join(" \u2022 ");
   const streamTitle = [line1, line2, line3].filter(Boolean).join("\n");
 
   return {
