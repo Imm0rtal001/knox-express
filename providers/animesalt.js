@@ -1,14 +1,14 @@
 "use strict";
 
-const MAIN_URL = "https://animesalt.cx";
+const BASE_URL = "https://animesalt.cx";
 const TMDB_API_KEY = "307b7b8ef035c6aa336900aef4e203bd";
 const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150.0.0.0 Safari/537.36",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151.0.0.0 Safari/537.36",
   "Referer": "https://animesalt.cx/",
 };
 
 async function fetchHtml(url, options = {}) {
-  const resolvedUrl = url.startsWith("http") ? url : `${MAIN_URL}${url}`;
+  const resolvedUrl = url.startsWith("http") ? url : `${BASE_URL}${url}`;
   try {
     const response = await fetch(resolvedUrl, { headers: HEADERS, ...options });
     if (!response.ok) return "";
@@ -155,7 +155,7 @@ async function resolveStreamData(pageUrl) {
         "Origin": cdnOrigin,
         "X-Requested-With": "XMLHttpRequest",
       },
-      body: `hash=${videoHash}&r=${encodeURIComponent(MAIN_URL + "/")}`,
+      body: `hash=${videoHash}&r=${encodeURIComponent(BASE_URL + "/")}`,
     });
     if (!response.ok) return null;
 
@@ -204,7 +204,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
       : "";
 
     return [{
-      name: "AnimeSalt.",
+      name: "AnimeSalt",
       title: "AnimeSalt",
       url: stream.url,
       quality: "1080p",
