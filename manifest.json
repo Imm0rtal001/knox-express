@@ -1,6 +1,6 @@
 {
   "id": "com.knox.express",
-  "version": "4.0.28",
+  "version": "4.0.29",
   "name": "Knox Express",
   "description": "Express-based multi-provider stream addon with a TV-friendly provider manager.",
   "logo": "https://knox-express-firetv.vercel.app/logo.svg",

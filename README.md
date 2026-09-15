@@ -71,4 +71,13 @@ Use only sources and content you are authorized to access.
 - Correctly parses TMDB/IMDb movie and series IDs used by Nuvio TV.
 - Adds CORS and OPTIONS support for Fire TV/WebView clients.
 - Adds HEAD compatibility for manifest and stream endpoints.
-- Pins Vercel runtime to Node.js 20 for stable deployment.
+- Uses the Node.js version declared in `package.json` (`22.x`); no invalid custom Vercel runtime is configured.
+
+
+## Repository fixes (v4.0.29)
+
+- Repaired `data/providers.json`, which was invalid JSON and prevented the server/test suite from starting.
+- Normalized provider registry paths so entries using `providers/foo.js` no longer resolve to `providers/providers/foo.js`.
+- Replaced the obsolete `cheerio-without-node-native` dependency references with the installed `cheerio` package.
+- Corrected the smoke test to validate Stremio resource objects and provider paths.
+- Kept Vercel configuration free of the invalid runtime/includeFiles settings that caused deployment errors.

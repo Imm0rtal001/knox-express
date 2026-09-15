@@ -34,5 +34,5 @@ This reports every configured provider, whether its file loads, and any module-l
 If Vercel reports `Error: Function Runtimes must have a valid version`, the cause is the
 explicit `functions.api/index.js.runtime` entry in `vercel.json`. This repository now
 lets Vercel detect the Node.js function automatically and uses `package.json`'s
-`engines.node` (`20.x`) for the Node version. The rewrite sends addon routes to
+`engines.node` (`22.x`) for the Node version. The rewrite sends addon routes to
 `api/index.js`.

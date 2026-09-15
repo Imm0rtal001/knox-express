@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const cheerio = require("cheerio-without-node-native");
+const cheerio = require("cheerio");
 const BASE_URL = "https://new5.hdhub4u.cl";
 const SEARCH_ENDPOINT = "https://search.pingora.fyi/collections/post/documents/search";
 const TMDB_ENDPOINT = "https://api.themoviedb.org/3";

@@ -181,12 +181,25 @@ async function persistProviders(state) {
   return state;
 }
 
+function providerFilename(value) {
+  // Registry entries historically used both "foo.js" and "providers/foo.js".
+  // Normalize both forms to a safe filename inside the providers directory.
+  const raw = String(value || "").replace(/\\/g, "/").trim();
+  const filename = path.basename(raw);
+  return filename && filename !== "." && filename !== ".." ? filename : "";
+}
+
+function providerFilePath(value) {
+  const filename = providerFilename(value);
+  return filename ? path.join(ROOT, "providers", filename) : "";
+}
+
 function loadProvider(id) {
   const state = readProviders();
   const p = state[id];
   if (!p || !p.enabled) return null;
-  const filename = path.basename(p.filename);
-  const file = path.join(ROOT, "providers", filename);
+  const filename = providerFilename(p.filename);
+  const file = providerFilePath(filename);
   if (!fs.existsSync(file)) {
     log("error", "Provider file missing", { id, file });
     return null;
@@ -837,12 +850,12 @@ function addonManifest(req) {
   const enabledProviderIds = all.filter(p => p.enabled === true).map(p => p.id);
   const manifest = {
     id: "com.knox.express",
-    version: "4.0.28",
+    version: "4.0.29",
     name: "Knox Express",
     description: "Knox Express multi-provider streaming addon with provider controls.",
     // Use an absolute HTTPS asset URL for Fire TV/Nuvio clients.
-    logo: `https://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
-    icon: `https://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
+    logo: `${req?.protocol || "https"}://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
+    icon: `${req?.protocol || "https"}://${req?.get?.("host") || "knox-express-firetv.vercel.app"}/logo.svg`,
     // Resource-level declaration is more compatible with Nuvio/Stremio and
     // deliberately omits idPrefixes so numeric TMDB IDs are not filtered out.
     resources: [{ name: "stream", types: ["movie", "series"] }],
@@ -969,8 +982,8 @@ app.post("/api/scrapers/refresh", async (_req, res) => {
   // Reload every enabled scraper concurrently. A broken scraper is isolated
   // and cannot prevent the other scraper modules from being refreshed.
   const refreshSettled = await Promise.allSettled(enabledProviders.map(async (p) => {
-    const filename = path.basename(p.filename);
-    const file = path.join(ROOT, "providers", filename);
+    const filename = providerFilename(p.filename);
+    const file = providerFilePath(filename);
     if (!fs.existsSync(file)) throw new Error("Provider file missing");
     const resolved = require.resolve(file);
     delete require.cache[resolved];
