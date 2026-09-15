@@ -1,253 +1,310 @@
 {
-  "4khdhub": {
-    "id": "4khdhub",
-    "name": "4KHDHub",
-    "description": "4KHDHub direct links",
-    "version": "1.5.0",
-    "author": "Imm0rtal",
-    "filename": "4khdhub.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/DZpW6Xfb/4khdhub.png",
-    "contentLanguage": [
-      "en"
-    ]
-  },
-  "movieBlast": {
-    "id": "movieBlast",
-    "name": "MovieBlast",
-    "description": "Provider: MovieBlast | English, Hindi",
-    "version": "1.3.0",
-    "author": "Imm0rtal",
-    "filename": "MovieBlast.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
-  "CineFreak": {
-    "id": "CineFreak",
-    "name": "CineFreak",
-    "description": "Provider: CineFreak | Bangla, English, Hindi",
-    "version": "3.3.0",
-    "author": "Imm0rtal",
-    "filename": "CineFreak.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "",
-    "contentLanguage": [
-      "bn",
-      "hi",
-      "en"
-    ]
-  },
-  "moviesHunt": {
-    "id": "moviesHunt",
-    "name": "MoviesHunt",
-    "description": "Provider: MoviesHunt | Multi-Lang",
-    "version": "1.5.0",
-    "author": "Imm0rtal",
-    "filename": "MoviesHunt.js",
-    "supportedTypes": [
-      "movie"
-    ],
-    "enabled": true,
-    "logo": "",
-    "contentLanguage": [
-      "en"
-    ]
-  },
-  "animesalt": {
-    "id": "animesalt",
-    "name": "AnimeSalt",
-    "description": "AnimeSalt India",
-    "version": "1.0.0",
-    "author": "Imm0rtal",
-    "filename": "animesalt.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/1X24MYhg/animesalt.png",
-    "contentLanguage": [
-      "hi",
-      "en",
-      "ja"
-    ]
-  },
-  "animeworld": {
-    "id": "animeworld",
-    "name": "AnimeWorld",
-    "description": "Watch AnimeWorld India",
-    "version": "1.0.0",
-    "author": "Imm0rtal",
-    "filename": "animeworld.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/wxD6rVKX/animeworld.png",
-    "contentLanguage": [
-      "hi",
-      "en",
-      "ja"
-    ]
-  },
-  "hdhub4u": {
-    "id": "hdhub4u",
-    "name": "HDHub4u",
-    "description": "Direct links from HDHub4u with high-speed download support",
-    "version": "1.0.0",
-    "author": "Imm0rtal",
-    "filename": "hdhub4u.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/mryRTf0R/hdhub4u.png",
-    "contentLanguage": [
-      "en"
-    ]
-  },
-  "hdGharTV": {
-    "id": "hdGharTV",
-    "name": "HdGharTV",
-    "description": "Provider: HdGharTV | Multi-lang",
-    "version": "1.1.0",
-    "author": "Imm0rtal",
-    "filename": "HdGharTV.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
-  "moviesdrive": {
-    "id": "moviesdrive",
-    "name": "MoviesDrive",
-    "description": "MoviesDrive - Movies and TV shows with multiple streaming servers",
-    "version": "2.0.0",
-    "author": "Imm0rtal",
-    "filename": "moviesdrive.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/bwDbhq9q/moviesdrive.png",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
-  "uhdmovies": {
-    "id": "uhdmovies",
-    "name": "UHDMovies",
-    "description": "UHD Movies streaming with multiple resolution",
-    "version": "1.0.0",
-    "author": "Imm0rtal",
-    "filename": "uhdmovies.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/KzDBBdbK/uhdmovies.png",
-    "contentLanguage": [
-      "en"
-    ]
-  },
-  "vegaMovies": {
-    "id": "vegaMovies",
-    "name": "VegaMovies",
-    "description": "VegaMovies streaming with high-quality direct links",
-    "version": "2.0",
-    "author": "Imm0rtal",
-    "filename": "vegamovies.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/TwYK26jn/vegamovies.png",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
-  "rogmovies": {
-    "id": "rogmovies",
-    "name": "Rogmovies",
-    "description": "rogmovies streaming bollywood movies with high-quality direct links",
-    "version": "3.0",
-    "author": "Imm0rtal",
-    "filename": "rogmovies.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
-  "zinkmovies": {
-    "id": "zinkmovies",
-    "name": "ZinkMovies",
-    "description": "Bollywood Movies, Hollywood Movies, South Indian Movies, Hindi Dubbed Movies, Web Series, OTT Releases, & Trending Cinema",
-    "version": "1.0.0",
-    "author": "Imm0rtal",
-    "filename": "zinkmovies.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/XqCZyCgp/zinkmovies.png",
-    "contentLanguage": [
-      "en",
-      "hi",
-      "ta",
-      "te"
-    ]
-  },
-  "dahmermovies": {
-    "id": "dahmermovies",
-    "name": "Dahmermovies",
-    "description": "Only works on Android TV",
-    "version": "1.0.1",
-    "author": "Imm0rtal",
-    "filename": "dahmermovies.js",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "enabled": true,
-    "logo": "https://i.postimg.cc/hGt3dV6Z/dhamermovies.png",
-    "contentLanguage": [
-      "en"
-    ]
-  }
+      "id": "4khdhub",
+      "name": "4Khdhub.",
+      "description": "Provider: 4kHdHub | Multi-lang",
+      "version": "1.5.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/4khdhub.js",
+      "enabled": true,
+      "hasSettings": true,
+      "formats": [
+        "mkv",
+        "m3u8",
+        "mp4"
+      ],
+      "logo": "https://i.postimg.cc/DZpW6Xfb/4khdhub.png",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ]
+    },
+    {
+      "id": "movieBlast",
+      "name": "MovieBlast.",
+      "description": "Disabled: requires crypto-js, which is not available in the Nuvio sandbox. | Fire TV: kept enabled; no overall response timeout.",
+      "version": "1.1.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/MovieBlast.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ]
+    },
+    {
+      "id": "CineFreak",
+      "name": "CineFreak.",
+      "description": "Provider: CineFreak | Bangla, English, Hindi • Nuvio TV / Fire TV compatible",
+      "version": "3.3.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/CineFreak.js",
+      "enabled": true,
+      "formats": [
+        "mkv",
+        "mp4"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "bn",
+        "hi",
+        "en"
+      ]
+    },
+    {
+      "id": "moviesHunt",
+      "name": "MoviesHunt.",
+      "description": "Provider: MoviesHunt | Multi-Lang • Nuvio TV / Fire TV compatible",
+      "version": "1.5.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie"
+      ],
+      "filename": "providers/MoviesHunt.js",
+      "enabled": true,
+      "formats": [
+        "m3u8"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en"
+      ]
+    },
+     {
+      "id": "hianime",
+      "name": "Hianime.",
+      "description": "h!anime • Sub/Dub • Anime",
+      "version": "1.3.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/hianime.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "m3u8",
+        "mkv"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ],
+      "hasSettings": true
+    },
+    {
+      "id": "animesalt",
+      "name": "AnimeSalt.",
+      "description": "AnimeSalt India • Nuvio TV / Fire TV compatible",
+      "version": "1.0.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/animesalt.js",
+      "enabled": true,
+      "formats": [
+        "m3u8",
+        "mp4"
+      ],
+      "logo": "https://i.postimg.cc/1X24MYhg/animesalt.png",
+      "contentLanguage": [
+        "hi",
+        "en",
+        "ja"
+      ]
+    },
+    {
+      "id": "animeworld",
+      "name": "AnimeWorld.",
+      "description": "Watch AnimeWorld India • Nuvio TV / Fire TV compatible",
+      "version": "1.2.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/animeworld.js",
+      "enabled": true,
+      "formats": [
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/wxD6rVKX/animeworld.png",
+      "contentLanguage": [
+        "hi",
+        "en",
+        "ja"
+      ]
+    },
+     {
+      "id": "reanime",
+      "name": "Reanime.",
+      "description": "Re:ANIME • Sub/Dub • Anime",
+      "version": "1.4.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/reanime.js",
+      "enabled": true,
+      "formats": [
+        "mkv"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en",
+        "ja"
+      ]
+    },
+    {
+      "id": "dahmermovies.",
+      "name": "Dahmermovies.",
+      "description": "Only works on Android TV • Nuvio TV / Fire TV compatible",
+      "version": "1.0.1",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/dahmermovies.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/hGt3dV6Z/dhamermovies.png",
+      "contentLanguage": [
+        "en"
+      ]
+    },
+    {
+      "id": "hdhub4u",
+      "name": "HDHub4u.",
+      "description": "Direct links from HDHub4u with high-speed download support • Nuvio TV / Fire TV compatible",
+      "version": "1.0.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/hdhub4u.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/mryRTf0R/hdhub4u.png",
+      "contentLanguage": [
+        "en"
+      ]
+    },
+    {
+      "id": "moviesdrive",
+      "name": "MoviesDrive.",
+      "description": "MoviesDrive - Movies and TV shows with multiple streaming servers • Nuvio TV / Fire TV compatible | Fire TV: kept enabled; no overall response timeout.",
+      "version": "2.0.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/moviesdrive.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "mkv",
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/bwDbhq9q/moviesdrive.png",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ]
+    },
+    {
+      "id": "uhdmovies",
+      "name": "UHDMovies.",
+      "description": "UHD Movies streaming with multiple resolution • Nuvio TV / Fire TV compatible",
+      "version": "1.0.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/uhdmovies.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "m3u8"
+      ],
+      "logo": "https://i.postimg.cc/KzDBBdbK/uhdmovies.png",
+      "contentLanguage": [
+        "en"
+      ]
+    },
+    {
+      "id": "vegaMovies",
+      "name": "VegaMovies.",
+      "description": "VegaMovies streaming with high-quality direct links • Nuvio TV / Fire TV compatible | Fire TV: kept enabled; no overall response timeout.",
+      "version": "2.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/vegamovies.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "mkv"
+      ],
+      "logo": "https://i.postimg.cc/TwYK26jn/vegamovies.png",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ]
+    },
+    {
+      "id": "rogmovies",
+      "name": "Rogmovies.",
+      "description": "rogmovies streaming bollywood movies with high-quality direct links • Nuvio TV / Fire TV compatible | Fire TV: kept enabled; no overall response timeout.",
+      "version": "2.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "filename": "providers/rogmovies.js",
+      "enabled": true,
+      "formats": [
+        "mp4",
+        "mkv"
+      ],
+      "logo": "",
+      "contentLanguage": [
+        "en",
+        "hi"
+      ]
+    }
 }
