@@ -1,4 +1,4 @@
-const cheerio = require("cheerio-without-node-native");
+const cheerio = require("cheerio");
 const PROVIDER = "4kHdHub";
 const BASE_URL = "https://4khdhub.one";
 const MOBILE_UAS = [
