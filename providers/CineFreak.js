@@ -1,6 +1,6 @@
 "use strict";
 
-const cheerio = require("cheerio");
+const cheerio = require("cheerio-without-node-native");
 const PROVIDER_NAME = "CineFreak";
 const BASE_URL = "https://cinefreak.net";
 const TMDB_API = "https://api.themoviedb.org/3";
