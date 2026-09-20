@@ -23,28 +23,6 @@
       "hi"
     ]
   },
-  "movieBlast": {
-    "id": "movieBlast",
-    "name": "MovieBlast.",
-    "description": "Disabled: requires crypto-js, which is not available in the Nuvio sandbox. | Fire TV: kept enabled; no overall response timeout.",
-    "version": "1.1.0",
-    "author": "Imm0rtal001",
-    "supportedTypes": [
-      "movie",
-      "tv"
-    ],
-    "filename": "providers/MovieBlast.js",
-    "enabled": true,
-    "formats": [
-      "mp4",
-      "m3u8"
-    ],
-    "logo": "",
-    "contentLanguage": [
-      "en",
-      "hi"
-    ]
-  },
   "CineFreak": {
     "id": "CineFreak",
     "name": "CineFreak.",
