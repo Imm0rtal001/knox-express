@@ -46,6 +46,20 @@
       "en"
     ]
   },
+    {
+      "id": "moviebox",
+      "name": "MovieBox.",
+      "description": "MovieBox streaming with multiple language support (DASH + MP4)",
+      "version": "1.3.0",
+      "author": "Imm0rtal001",
+      "supportedTypes": ["movie", "tv"],
+      "filename": "providers/moviebox.js",
+      "enabled": true,
+      "hasSettings": false,
+      "formats": ["mp4", "mpd"],
+      "logo": "https://i.postimg.cc/TPwkfqHh/moviebox.png",
+      "contentLanguage": ["en", "hi", "ta", "te"]
+    } ,
   "moviesHunt": {
     "id": "moviesHunt",
     "name": "MoviesHunt.",
